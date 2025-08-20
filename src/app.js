@@ -45,7 +45,7 @@ app.use("/api/product",productRouter)
 app.use("/auth",authRoutes);
 
 
-// Error middleware
+// Error middleware ee
 app.use(errorMiddleware);
 
 module.exports = app;
