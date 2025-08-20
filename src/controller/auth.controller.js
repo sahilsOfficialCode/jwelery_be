@@ -74,22 +74,15 @@ const generateOTP = () => {
 }
 
 exports.verifyOtp = catchAsyncErrors(async (req, res, next) => {
-    console.log("<><>working");
-    
-    console.log("<><>req.body",req.body);
-    
     const { mobile, otp } = req.body
-    console.log("<><>mobile",mobile);
-    
     const otpVerify = await verifyOtpWithMobile(mobile, otp)
+
     if(!otpVerify.status){
         return next(new ErrorHandler(otpVerify.message,500));
     }
     if (!otpVerify) {
         return next(new ErrorHandler(otpVerify.message, 500));
     }
-    console.log("<><>otpVerify",otpVerify);
-    
     const token = jwt.sign({ _id: otpVerify.data._id, mobile: otpVerify.data.mobile, role: otpVerify.data.role, provider: otpVerify.data.provider }, process.env.JWT_SECRET, { expiresIn: '30d' });
     sendToken(token, 200, res);
     return res.status(200).send()
