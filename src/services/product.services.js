@@ -27,7 +27,13 @@ exports.getAllProducts = async (query) => {
 
   // filter based on search
   if (query.search) {
-    filters.name = { $regex: query.search, $options: "i" }; // case-insensitive
+    const regex = new RegExp(query.search, "i");
+    filters.$or = [
+      { name: regex },
+      { description: regex },
+      { category: regex },
+      { material: regex },
+    ];
   }
 
   const page = parseInt(query.page) || 1;
