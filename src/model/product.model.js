@@ -82,27 +82,54 @@
 // NEW SCHEMA
 const mongoose = require("mongoose");
 
-const productSchema = new mongoose.Schema({
-  name: { type: String, required: true, trim: true },
-  description: { type: String },
-  price: { type: Number, required: true },
-  discountedPrice: { type: Number }, // Final price after discount
-  discountType: {
-    type: String,
-    enum: ["percentage", "flat"],
+const productSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    slug: { type: String, unique: true, lowercase: true, index: true },
+
+    description: { type: String, required: true },
+
+    category: { type: String, required: true }, // e.g. Earrings, Necklace, Bangles
+    subCategory: { type: String }, // e.g. "Jhumka Earrings"
+
+    material: { type: String }, // Brass, Alloy, German Silver
+    plating: { type: String }, // Oxidised Silver, Rose Gold Plated
+    finish: { type: String }, // Matte, Glossy, Antique
+
+    occasion: [String], // e.g. ["Daily Wear", "Party", "Wedding"]
+
+    variants: [
+      {
+        color: String,
+        size: String, // e.g. "Free Size", "2.4", "2.6"
+        stock: { type: Number, default: 0 },
+        sku: { type: String, unique: true },
+      },
+    ],
+
+    price: { type: Number, required: true },
+    discountPrice: { type: Number }, // after discount
+
+    stock: { type: Number, default: 0 },
+
+    images: [{ url: String, alt: String }],
+
+    ratings: {
+      average: { type: Number, default: 0 },
+      count: { type: Number, default: 0 },
+    },
+
+    tags: [String], // e.g. ["oxidised", "party wear"]
+
+    isFeatured: { type: Boolean, default: false },
+
+    seo: {
+      metaTitle: String,
+      metaDescription: String,
+      keywords: [String],
+    },
   },
-  discountValue: { type: Number },
-  stock: { type: Number, required: true },
-  category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
-  images: [{ type: String }], //s3 urls
-  material: { type: String },
-  weight: { type: Number },
-  ratings: {
-    average: { type: Number, default: 0 },
-    count: { type: Number, default: 0 },
-  },
-  isFeatured: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now },
-});
+  { timestamps: true }
+);
 
 module.exports = mongoose.model("Product", productSchema);

@@ -1,9 +1,10 @@
-const express = require('express');
+const express = require("express");
+const morgan = require("morgan");
 const session = require("express-session");
 const passport = require("./config/passport.js");
-const cors = require('cors');
-const path = require('path');
-const errorMiddleware = require('./middleware/error.js');
+const cors = require("cors");
+const path = require("path");
+const errorMiddleware = require("./middleware/error.js");
 
 const app = express();
 
@@ -32,18 +33,20 @@ app.use(express.static(path.join(__dirname, "..", "public")));
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "hbs");
 
+// api logs
+app.use(morgan("tiny"));
+
 // Serve the uploads folder
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 
 // Routes
-const indexRouter = require('./routes/index.route.js');
-const productRouter = require('./routes/product.routes.js')
+const indexRouter = require("./routes/index.route.js");
+const productRouter = require("./routes/product.routes.js");
 const authRoutes = require("./routes/auth.route.js");
 
 app.use("/", indexRouter);
-app.use("/api/product",productRouter)
-app.use("/auth",authRoutes);
-
+app.use("/api/product", productRouter);
+app.use("/auth", authRoutes);
 
 // Error middleware
 app.use(errorMiddleware);
