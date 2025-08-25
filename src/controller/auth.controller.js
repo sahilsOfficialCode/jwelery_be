@@ -4,8 +4,9 @@ const jwt = require("jsonwebtoken");
 const sendToken = require("../utils/jwtToken");
 const ErrorHandler = require("../utils/errorHandler");
 const { client, isReady } = require("../utils/whatsappClient");
-const crypto = require("crypto");
-const { updateOtpWithMobile, verifyOtpWithMobile } = require("../services/authService");
+const { updateOtpWithMobile, verifyOtpWithMobile, sendEmailFunService } = require("../services/authService");
+const User = require("../model/user.model");
+const bcrypt = require('bcrypt')
 
 exports.googleAuth = passport.authenticate("google", { scope: ["profile", "email"] });
 
@@ -74,11 +75,18 @@ const generateOTP = () => {
 }
 
 exports.verifyOtp = catchAsyncErrors(async (req, res, next) => {
-    const { mobile, otp } = req.body
-    const otpVerify = await verifyOtpWithMobile(mobile, otp)
+    const { mobile,email, otp } = req.body
+    let otpVerify 
+    if(mobile){
+        otpVerify = await verifyOtpWithMobile("mobile",mobile, otp)
+    }
+    if(email){
+         otpVerify = await verifyOtpWithMobile("email",email, otp)
+    }
+     
 
-    if(!otpVerify.status){
-        return next(new ErrorHandler(otpVerify.message,500));
+    if (!otpVerify.status) {
+        return next(new ErrorHandler(otpVerify.message, 500));
     }
     if (!otpVerify) {
         return next(new ErrorHandler(otpVerify.message, 500));
@@ -86,4 +94,26 @@ exports.verifyOtp = catchAsyncErrors(async (req, res, next) => {
     const token = jwt.sign({ _id: otpVerify.data._id, mobile: otpVerify.data.mobile, role: otpVerify.data.role, provider: otpVerify.data.provider }, process.env.JWT_SECRET, { expiresIn: '30d' });
     sendToken(token, 200, res);
     return res.status(200).send()
+})
+
+exports.loginwithemailandPassword = catchAsyncErrors(async (req, res, next) => {
+    const { name, email, password, cpassword } = req.body
+    if(!name, !email, !password, !cpassword) return next(new ErrorHandler("please enter all fields"))
+    if(password != cpassword)return next(new ErrorHandler("password and confirm password is incorrect"))
+    const emailExist = await User.findOne({ email });
+    if (emailExist) return next(new ErrorHandler("email already exist", 404));
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const verificationCode = generateOTP()
+    const otp = {
+        code:verificationCode
+    }
+    const user = await User.create({
+        email,
+        password: hashedPassword,
+        otp,
+        isVerified: false,
+        expireAt: new Date(Date.now() + 1 * 60 * 1000)
+    });
+    await sendEmailFunService(email, verificationCode)
+    return res.status(201).send({ message: "User registered, please check your email for verification code" })
 })

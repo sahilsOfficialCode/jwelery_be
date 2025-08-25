@@ -21,8 +21,10 @@ router.get("/me",authController.userLoginWithCode);
 router.get("/logout",authController.userLogout);
 
 // login with email or mobile
-router.post("/login",authController.loginWithMobileOrEmail)
+router.post("/login-google",authController.loginWithMobileOrEmail)
 
 router.post("/verify-otp",authController.verifyOtp)
+
+router.post("/register",authController.loginwithemailandPassword)
 
 module.exports = router
