@@ -98,15 +98,6 @@ const productSchema = new mongoose.Schema(
 
     occasion: [String], // e.g. ["Daily Wear", "Party", "Wedding"]
 
-    variants: [
-      {
-        color: String,
-        size: String, // e.g. "Free Size", "2.4", "2.6"
-        stock: { type: Number, default: 0 },
-        sku: { type: String, unique: true },
-      },
-    ],
-
     price: { type: Number, required: true },
     discountPrice: { type: Number }, // after discount
 
