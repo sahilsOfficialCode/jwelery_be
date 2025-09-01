@@ -86,6 +86,67 @@ exports.getAllProducts = catchAsyncErrors(async (req, res, next) => {
   }
 });
 
+// get product based on slug
+// exports.getProductSlug = catchAsyncErrors(async (req, res, next) => {
+//   try {
+//     const product = await productService.getProductSlug(req.query);
+//     if (!product || product.length === 0)
+//       return next(new ErrorHandler("No products found", 404));
+
+//     return res.status(200).json({
+//       success: true,
+//       count: products.length,
+//       product,
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// });
+
+// get product based on :id
+exports.getProductById = catchAsyncErrors(async (req, res, next) => {
+  try {
+    const product = await productService.getProductById(req.params.id);
+
+    if (!product || product.length === 0)
+      return next(new ErrorHandler("No product found", 404));
+
+    res.json({ success: true, data: product });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// update product using id
+exports.updateProduct = catchAsyncErrors(async (req, res, next) => {
+  try {
+    const product = await productService.updateProduct(req.params.id, req.body);
+
+    if (!product || product.length === 0)
+      return next(new ErrorHandler("No product found", 404));
+
+    res.json({ success: true, data: product });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// delete product using id
+exports.deleteProduct = catchAsyncErrors(async (req, res, next) => {
+  try {
+    const deleteProduct = await productService.deleteProduct(req.params.id);
+    if (!deleteProduct || deleteProduct.length === 0)
+      return next(new ErrorHandler("No product found", 404));
+
+    res
+      .status(200)
+      .json({ success: true, message: "product deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+//
 exports.uploadImages = catchAsyncErrors(async (req, res, next) => {
   const baseUrl = `${req.protocol}://${req.get("host")}/uploads/`;
 
