@@ -46,3 +46,18 @@ exports.getAllProducts = async (query) => {
 
   return await productQuery.findProducts(filters, options);
 };
+
+// get single product using id
+exports.getProductById = async (id) => {
+  return await Product.findById(id).populate("category");
+};
+
+// update product using id
+exports.updateProduct = async (id, data) => {
+  return await Product.findByIdAndUpdate(id, data, { new: true });
+};
+
+// delete product using id
+exports.deleteProduct = async (id) => {
+  return await Product.findByIdAndDelete(id);
+};
