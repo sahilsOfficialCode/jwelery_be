@@ -23,8 +23,12 @@ router.get("/logout",authController.userLogout);
 // login with email or mobile
 router.post("/login-google",authController.loginWithMobileOrEmail)
 
-router.post("/verify-otp",authController.verifyOtp)
+// router.post("/verify-otp",authController.verifyOtp)
 
-router.post("/register",authController.loginwithemailandPassword)
+router.post("/register",authController.registerwithemailandPassword)
+
+router.post("/verify",authController.registerWithEmailandPasswordVerify)
+
+router.post('/login',authController.loginWithEmailAndPassword)
 
 module.exports = router

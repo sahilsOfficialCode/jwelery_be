@@ -49,6 +49,19 @@ const userSchema = new mongoose.Schema(
       type: Date,
       index: { expires: 0 },
     },
+    is_deleted:{
+      type:Boolean,
+      default:false
+    },
+    is_blocked:{
+      type:Boolean,
+      required:true,
+      default:false
+    },
+    is_register:{
+      type:Boolean,
+      default:false
+    }
   },
   { timestamps: true }
 );
