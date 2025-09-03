@@ -42,10 +42,12 @@ app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 // Routes
 const indexRouter = require("./routes/index.route.js");
 const productRouter = require("./routes/product.routes.js");
+const categoryRouter = require("./routes/category.route.js");
 const authRoutes = require("./routes/auth.route.js");
 
 app.use("/", indexRouter);
 app.use("/api/product", productRouter);
+app.use("/api/category", categoryRouter);
 app.use("/auth", authRoutes);
 
 // Error middleware
