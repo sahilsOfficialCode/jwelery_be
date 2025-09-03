@@ -10,6 +10,8 @@ module.exports = (err,req, res,next)=>{
         const message = `resource not found . invalid: ${err.path}`
         err = new ErrorHandler(message,400)
     }
+    console.log("<><>error",err);
+    
 
     res.status(err.statuscode).send({status:false,data:'',message:err.message});
 }
