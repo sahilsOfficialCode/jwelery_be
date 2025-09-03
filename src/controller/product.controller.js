@@ -1,7 +1,7 @@
 const slugify = require("slugify");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const ErrorHandler = require("../utils/errorHandler");
-const productService = require("../services/product.services");
+const productService = require("../services/product.service");
 
 // create product
 exports.createProduct = async (req, res, next) => {
@@ -18,7 +18,6 @@ exports.createProduct = async (req, res, next) => {
       plating,
       finish,
       occasion,
-      variants,
       images,
       tags,
       isFeatured,
@@ -47,7 +46,6 @@ exports.createProduct = async (req, res, next) => {
       plating,
       finish,
       occasion,
-      variants,
       images,
       tags,
       isFeatured: isFeatured || false,
