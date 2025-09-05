@@ -44,11 +44,13 @@ const indexRouter = require("./routes/index.route.js");
 const productRouter = require("./routes/product.routes.js");
 const categoryRouter = require("./routes/category.route.js");
 const authRoutes = require("./routes/auth.route.js");
+const userRoutes = require("./routes/user.routes.js");
 
 app.use("/", indexRouter);
+app.use("/api/auth", authRoutes);
 app.use("/api/product", productRouter);
 app.use("/api/category", categoryRouter);
-app.use("/auth", authRoutes);
+app.use("/api/user", userRoutes);
 
 // Error middleware
 app.use(errorMiddleware);
