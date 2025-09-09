@@ -2,6 +2,8 @@ const slugify = require("slugify");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const ErrorHandler = require("../utils/errorHandler");
 const productService = require("../services/product.service");
+const { cloudinary } = require("../utils/cloudinary");
+const Image = require("../model/image.model");
 
 // create product
 exports.createProduct = async (req, res, next) => {
@@ -84,23 +86,6 @@ exports.getAllProducts = catchAsyncErrors(async (req, res, next) => {
   }
 });
 
-// get product based on slug
-// exports.getProductSlug = catchAsyncErrors(async (req, res, next) => {
-//   try {
-//     const product = await productService.getProductSlug(req.query);
-//     if (!product || product.length === 0)
-//       return next(new ErrorHandler("No products found", 404));
-
-//     return res.status(200).json({
-//       success: true,
-//       count: products.length,
-//       product,
-//     });
-//   } catch (error) {
-//     next(error);
-//   }
-// });
-
 // get product based on :id
 exports.getProductById = catchAsyncErrors(async (req, res, next) => {
   try {
@@ -132,6 +117,18 @@ exports.updateProduct = catchAsyncErrors(async (req, res, next) => {
 // delete product using id
 exports.deleteProduct = catchAsyncErrors(async (req, res, next) => {
   try {
+    const product = await productService.getProductById(req.params.id);
+    if(!product){
+      return next(new ErrorHandler("No product found", 404));
+    }
+    if(product.images.length > 1){
+      console.log("multiple images");
+      await cloudinary.api.delete_resources(product.images.map((image) => image.public_id));
+      await Image.deleteMany({ _id: { $in: product.images.map((image) => image._id) } });
+    }else{
+      await cloudinary.uploader.destroy(product.images[0].public_id);
+      await Image.deleteOne({ _id: product.images[0]._id });
+    }
     const deleteProduct = await productService.deleteProduct(req.params.id);
     if (!deleteProduct || deleteProduct.length === 0)
       return next(new ErrorHandler("No product found", 404));
@@ -144,14 +141,4 @@ exports.deleteProduct = catchAsyncErrors(async (req, res, next) => {
   }
 });
 
-//
-exports.uploadImages = catchAsyncErrors(async (req, res, next) => {
-  const baseUrl = `${req.protocol}://${req.get("host")}/uploads/`;
 
-  const imageUrls = req.files.images.map((file) => ({
-    originalName: file.originalname,
-    fileName: file.filename,
-    url: baseUrl + file.filename,
-  }));
-  return res.status(200).send({ success: true, data: imageUrls });
-});

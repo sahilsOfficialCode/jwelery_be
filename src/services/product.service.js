@@ -49,7 +49,7 @@ exports.getAllProducts = async (query) => {
 
 // get single product using id
 exports.getProductById = async (id) => {
-  return await Product.findById(id).populate("category");
+  return await Product.findById(id).populate("category").populate("images");
 };
 
 // update product using id

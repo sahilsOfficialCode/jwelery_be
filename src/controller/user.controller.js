@@ -19,14 +19,46 @@ exports.createUser = catchAsyncErrors(async(req, res, next)=>{
     res.status(200).json({success:true,data:createUser})
 })
 
-exports.getAllUser = catchAsyncErrors(async(req, res, next)=>{
-    const getAllUser = await userService.getAllUser()
-    if(!getAllUser){
-        return next(new ErrorHandler("No user found",404))
+exports.getAllUser = catchAsyncErrors(async (req, res, next) => {
+    let { page, limit, sortBy, order, search, role, isVerified } = req.query;
+    page = parseInt(page) || 1;
+    limit = parseInt(limit) || 10;
+    sortBy = sortBy || "createdAt";
+    order = order === "desc" ? -1 : 1;
+  
+    const skip = (page - 1) * limit;
+  
+    let filter = { is_deleted: false };
+  
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { mobile: { $regex: search, $options: "i" } },
+      ];
     }
-    res.status(200).json({success:true,data:getAllUser})
-})
-
+  
+    if (role) filter.role = role;
+    if (isVerified !== undefined) filter.isVerified = isVerified === "true";
+  
+    const total = await userService.countUsers(filter);
+  
+    const users = await userService.getUsers({
+      filter,
+      skip,
+      limit,
+      sort: { [sortBy]: order },
+    });
+  
+    res.status(200).json({
+      success: true,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      users,
+    });
+  });
+  
 exports.getUserById = catchAsyncErrors(async(req, res, next)=>{
     const getUserById = await userService.getUserById(req.params.id)
     if(!getUserById){
@@ -41,4 +73,14 @@ exports.deleteUser = catchAsyncErrors(async(req, res, next)=>{
         return next(new ErrorHandler("No user found",404))
     }
     res.status(200).json({success:true,data:deleteUser})
+})
+
+exports.updateUser = catchAsyncErrors(async(req, res, next)=>{
+    const { role, 
+        is_blocked } = req.body 
+    const updateUser = await userService.updateUser(req.params.id,{role,is_blocked})
+    if(!updateUser){
+        return next(new ErrorHandler("No user found",404))
+    }
+    res.status(200).json({success:true,data:updateUser})
 })
