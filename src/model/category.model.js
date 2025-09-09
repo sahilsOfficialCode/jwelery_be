@@ -8,7 +8,7 @@ const categorySchema = new mongoose.Schema({
     trim: true,
   },
   description: { type: String },
-  image: { type: String },
+  image: { type: mongoose.Schema.Types.ObjectId, ref: "images" },
   createdAt: { type: Date, default: Date.now },
 });
 

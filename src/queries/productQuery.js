@@ -6,5 +6,6 @@ exports.findProducts = async (filters, options) => {
     .skip(options.skip)
     .limit(options.limit)
     .sort(options.sort)
-    .populate("images","public_id secure_url _id");
+    .populate("images","public_id secure_url _id")
+    .populate("category");
 };
