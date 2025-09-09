@@ -42,11 +42,17 @@ app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 // Routes
 const indexRouter = require("./routes/index.route.js");
 const productRouter = require("./routes/product.routes.js");
+const categoryRouter = require("./routes/category.route.js");
 const authRoutes = require("./routes/auth.route.js");
+const userRoutes = require("./routes/user.routes.js");
+const imageRouter = require("./routes/image.route.js");
 
 app.use("/", indexRouter);
+app.use("/api/auth", authRoutes);
 app.use("/api/product", productRouter);
-app.use("/auth", authRoutes);
+app.use("/api/category", categoryRouter);
+app.use("/api/user", userRoutes);
+app.use("/api/image", imageRouter);
 
 // Error middleware
 app.use(errorMiddleware);
