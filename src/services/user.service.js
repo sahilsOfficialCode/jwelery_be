@@ -29,3 +29,7 @@ exports.getUsers = async ({ filter = {}, skip = 0, limit = 10, sort = {} }) => {
   exports.countUsers = async (filter = {}) => {
     return await User.countDocuments(filter);
   };
+
+  exports.updateUser = async (id,data) => {
+    return await User.findByIdAndUpdate(id,data,{new:true})
+  }

@@ -103,7 +103,10 @@ const productSchema = new mongoose.Schema(
 
     stock: { type: Number, default: 0 },
 
-    images: [{ url: String, alt: String }],
+    images: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "images"
+    }],
 
     ratings: {
       average: { type: Number, default: 0 },

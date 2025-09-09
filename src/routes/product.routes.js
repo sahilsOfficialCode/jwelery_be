@@ -20,15 +20,4 @@ router.put("/:id", productController.updateProduct);
 
 // delete product
 router.delete("/:id", productController.deleteProduct);
-
-router.post(
-  "/upload",
-  upload.fields([
-    { name: "profile", maxCount: 1 },
-    { name: "images", maxCount: 5 },
-    { name: "banner", maxCount: 1 },
-  ]),
-  productController.uploadImages
-);
-
 module.exports = router;
