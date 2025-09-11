@@ -103,10 +103,12 @@ const productSchema = new mongoose.Schema(
 
     stock: { type: Number, default: 0 },
 
-    images: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "images"
-    }],
+    images: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "images",
+      },
+    ],
 
     ratings: {
       average: { type: Number, default: 0 },
@@ -126,4 +128,5 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Product", productSchema);
+module.exports =
+  mongoose.models.Product || mongoose.model("Product", productSchema);

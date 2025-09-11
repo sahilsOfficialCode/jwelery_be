@@ -1,5 +1,4 @@
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
-const ErrorHandler = require("../utils/errorHandler");
 const cartService = require("../services/cart.service");
 
 exports.addToCart = catchAsyncErrors(async (req, res, next) => {
