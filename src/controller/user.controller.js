@@ -16,11 +16,12 @@ exports.createUser = catchAsyncErrors(async(req, res, next)=>{
         password
     } 
     const createUser = await userService.createUser(userDetail)
-    res.status(200).json({success:true,data:createUser})
+    res.status(200).json({success:true,data:createUser,message:"User created successfully"})
 })
 
 exports.getAllUser = catchAsyncErrors(async (req, res, next) => {
     let { page, limit, sortBy, order, search, role, isVerified } = req.query;
+  
     page = parseInt(page) || 1;
     limit = parseInt(limit) || 10;
     sortBy = sortBy || "createdAt";
@@ -56,15 +57,17 @@ exports.getAllUser = catchAsyncErrors(async (req, res, next) => {
       page,
       pages: Math.ceil(total / limit),
       users,
+      message:"Users fetched successfully"
     });
   });
   
+
 exports.getUserById = catchAsyncErrors(async(req, res, next)=>{
     const getUserById = await userService.getUserById(req.params.id)
     if(!getUserById){
         return next(new ErrorHandler("No user found",404))
     }
-    res.status(200).json({success:true,data:getUserById})
+    res.status(200).json({success:true,data:getUserById,message:"User fetched successfully"})
 })
 
 exports.deleteUser = catchAsyncErrors(async(req, res, next)=>{
@@ -72,15 +75,14 @@ exports.deleteUser = catchAsyncErrors(async(req, res, next)=>{
     if(!deleteUser){
         return next(new ErrorHandler("No user found",404))
     }
-    res.status(200).json({success:true,data:deleteUser})
+    res.status(200).json({success:true,data:deleteUser,message:"User deleted successfully"})
 })
 
 exports.updateUser = catchAsyncErrors(async(req, res, next)=>{
-    const { role, 
-        is_blocked } = req.body 
+    const { role,is_blocked } = req.body 
     const updateUser = await userService.updateUser(req.params.id,{role,is_blocked})
     if(!updateUser){
         return next(new ErrorHandler("No user found",404))
     }
-    res.status(200).json({success:true,data:updateUser})
+    res.status(200).json({success:true,data:updateUser,message:"User updated successfully"})
 })

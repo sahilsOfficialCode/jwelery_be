@@ -13,11 +13,11 @@ exports.countCategories = async (filter) => {
 };
 
 exports.getCategories = async ({ filter = {}, skip = 0, limit = 10, sort = {} }) => {
-  return await Category.find(filter).skip(skip).limit(limit).sort(sort);
+  return await Category.find(filter).skip(skip).limit(limit).sort(sort).populate("image");
 };
 
 exports.getCategoryById = async (id) => {
-  return await Category.findById(id);
+  return await Category.findById(id).populate("image");
 };
 
 exports.updateCategory = async (id, data) => {
@@ -25,5 +25,5 @@ exports.updateCategory = async (id, data) => {
 };
 
 exports.deleteCategory = async (id) => {
-  return await Category.findByIdAndDelete(id);
+  return await Category.findByIdAndDelete(id)
 };

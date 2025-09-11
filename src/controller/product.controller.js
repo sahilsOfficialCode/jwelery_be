@@ -37,7 +37,7 @@ exports.createProduct = async (req, res, next) => {
     // Prepare product data
     const saveProduct = {
       name,
-      slug,
+      // slug,
       description,
       category,
       subCategory,
@@ -121,14 +121,25 @@ exports.deleteProduct = catchAsyncErrors(async (req, res, next) => {
     if(!product){
       return next(new ErrorHandler("No product found", 404));
     }
-    if(product.images.length > 1){
-      console.log("multiple images");
-      await cloudinary.api.delete_resources(product.images.map((image) => image.public_id));
-      await Image.deleteMany({ _id: { $in: product.images.map((image) => image._id) } });
-    }else{
-      await cloudinary.uploader.destroy(product.images[0].public_id);
-      await Image.deleteOne({ _id: product.images[0]._id });
-    }
+  if (product.images && product.images.length > 0) {
+  if (product.images.length > 1) {
+    console.log("product.images", product.images);
+
+    await cloudinary.api.delete_resources(
+      product.images.map((image) => image.public_id)
+    );
+
+    await Image.deleteMany({
+      _id: { $in: product.images.map((image) => image._id) },
+    });
+  } else {
+    await cloudinary.uploader.destroy(product.images[0].public_id);
+
+    await Image.deleteOne({ _id: product.images[0]._id });
+  }
+} else {
+  console.log("No images found, skipping deletion.");
+}
     const deleteProduct = await productService.deleteProduct(req.params.id);
     if (!deleteProduct || deleteProduct.length === 0)
       return next(new ErrorHandler("No product found", 404));
