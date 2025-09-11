@@ -46,6 +46,8 @@ const categoryRouter = require("./routes/category.route.js");
 const authRoutes = require("./routes/auth.route.js");
 const userRoutes = require("./routes/user.routes.js");
 const imageRouter = require("./routes/image.route.js");
+const cartRouter = require("./routes/cart.route.js");
+const wishListRouter = require("./routes/wishList.route.js");
 
 app.use("/", indexRouter);
 app.use("/api/auth", authRoutes);
@@ -53,6 +55,8 @@ app.use("/api/product", productRouter);
 app.use("/api/category", categoryRouter);
 app.use("/api/user", userRoutes);
 app.use("/api/image", imageRouter);
+app.use("/api/cart", cartRouter);
+app.use("/api/wishList", wishListRouter);
 
 // Error middleware
 app.use(errorMiddleware);

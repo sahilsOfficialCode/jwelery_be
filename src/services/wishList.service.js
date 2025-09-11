@@ -1,4 +1,4 @@
-const WishList = require("../model/WishList");
+const WishList = require("../model/WishList.model");
 const ErrorHandler = require("../utils/errorHandler");
 
 // add to wish list api
