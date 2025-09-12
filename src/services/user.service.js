@@ -33,3 +33,7 @@ exports.getUsers = async ({ filter = {}, skip = 0, limit = 10, sort = {} }) => {
   exports.updateUser = async (id,data) => {
     return await User.findByIdAndUpdate(id,data,{new:true})
   }
+
+  exports.softDeleteUser = async (id) => {
+    return await User.findByIdAndUpdate(id,{is_deleted:true},{new:true})
+  }
