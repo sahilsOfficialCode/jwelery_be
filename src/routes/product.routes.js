@@ -7,7 +7,7 @@ const router = express.Router();
 
 // users get All products
 router.get("/trending-products", productController.userGetAllTrendingProducts);
-
+router.get("/:id", productController.getProductById);
 
 router.use(userAuthentication)
 // Admin section
@@ -17,7 +17,6 @@ router.get("/all", productController.getAllProducts);
 // get single product using slug
 // router.get("/slug/:slug", productController.getProductSlug);
 // get single product using id.
-router.get("/:id", productController.getProductById);
 // update product
 router.put("/:id", productController.updateProduct);
 // delete product

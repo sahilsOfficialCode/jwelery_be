@@ -116,7 +116,9 @@ exports.registerwithemailandPassword = catchAsyncErrors(async (req, res, next) =
 })
 
 exports.registerWithEmailandPasswordVerify = catchAsyncErrors(async (req, res, next) => {
-    const { email, otp, password, cpassword } = req.body
+    const { name, email, otp, password, cpassword } = req.body
+    console.log("<><>req.body",req.body);
+    
     if (!email || !otp || !passport || !cpassword || !password) return res.status(400).send({ success: false, message: "Please fill in all required fields" })
     const emailData = await User.findOne({ email: email.toLowerCase(), is_register: false });
     if (!emailData) return res.status(400).send({ success: false, message: "please check the email something went wrong please contact admin" })
@@ -130,7 +132,6 @@ exports.registerWithEmailandPasswordVerify = catchAsyncErrors(async (req, res, n
 exports.loginWithEmailAndPassword = catchAsyncErrors(async (req, res, next) => {
     const { email, password } = req.body
     const emailData = await User.findOne({ email }).select('+password')
-    
     if (!emailData) return next(new ErrorHandler("No account found with this email. Please sign up first",400))
 
     if (!emailData.is_register) return next(new ErrorHandler("Your account is not registered. Please complete the registration process",403))
@@ -139,12 +140,10 @@ exports.loginWithEmailAndPassword = catchAsyncErrors(async (req, res, next) => {
 
   if (emailData.is_blocked) return next(new ErrorHandler("Your account has been blocked. Please reach out to support for assistance",400))
 
-  const passwordMatch = bcrypt.compare(password,emailData.password)
+  const passwordMatch = await bcrypt.compare(emailData.password,password)
   
   if(!passwordMatch) return next(new ErrorHandler("Invalid email or password. Please try again",403))
-    const token = jwt.sign({id:emailData._id,email:email.email},process.env.JWT_SECRET,{expiresIn:"30d"})
-console.log("<><>token",token);
-
+    const token = jwt.sign({id:emailData._id,email:email.email},process.env.JWT_SECRET,{expiresIn:process.env.JWT_EXPIRES})
     sendToken(token,emailData,200,res);
 
 })
