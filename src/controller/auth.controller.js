@@ -119,11 +119,10 @@ exports.registerWithEmailandPasswordVerify = catchAsyncErrors(async (req, res, n
     const { name, email, otp, password, cpassword } = req.body
     console.log("<><>req.body",req.body);
     
-    if (!email || !otp || !passport || !cpassword || !password) return res.status(400).send({ success: false, message: "Please fill in all required fields" })
+    if (!email || !otp || !password) return res.status(400).send({ success: false, message: "Please fill in all required fields" })
     const emailData = await User.findOne({ email: email.toLowerCase(), is_register: false });
     if (!emailData) return res.status(400).send({ success: false, message: "please check the email something went wrong please contact admin" })
     if (emailData.otp.code != otp) return res.status(400).send({ success: false, message: "The OTP you entered does not match" })
-    if (password != cpassword) return res.status(400).send({ success: false, message: "Confirm password does not match the password." });
     const hashPassword = await bcrypt.hash(password, 10)
     const updateData = await User.findByIdAndUpdate(emailData._id, { is_register: true, otp: undefined, password: hashPassword })
     return res.status(200).send({ success: true, message: "User data and OTP verified successfully. You can now continue to login." })
@@ -139,8 +138,7 @@ exports.loginWithEmailAndPassword = catchAsyncErrors(async (req, res, next) => {
   if (emailData.is_deleted) return next(new ErrorHandler("This account has been deleted. Please contact support if this is a mistake",400))
 
   if (emailData.is_blocked) return next(new ErrorHandler("Your account has been blocked. Please reach out to support for assistance",400))
-
-  const passwordMatch = await bcrypt.compare(emailData.password,password)
+  const passwordMatch = await bcrypt.compare(password,emailData.password)
   
   if(!passwordMatch) return next(new ErrorHandler("Invalid email or password. Please try again",403))
     const token = jwt.sign({id:emailData._id,email:email.email},process.env.JWT_SECRET,{expiresIn:process.env.JWT_EXPIRES})
