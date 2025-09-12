@@ -3,7 +3,7 @@ const cartService = require("../services/cart.service");
 
 exports.addToCart = catchAsyncErrors(async (req, res, next) => {
   try {
-    const cart = cartService.addToCart(
+    const cart = await cartService.addToCart(
       req.user._id,
       req.body.product,
       req.body.quantity
