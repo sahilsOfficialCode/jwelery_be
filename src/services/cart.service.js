@@ -1,5 +1,5 @@
 const Cart = require("../model/Cart.model");
-const Product = require("../model/Product.model");
+const Product = require("../model/product.model");
 const ErrorHandler = require("../utils/errorHandler");
 
 exports.addToCart = async (userId, productId, quantity) => {
@@ -21,7 +21,7 @@ exports.addToCart = async (userId, productId, quantity) => {
     cart.items.push({
       product: productId,
       quantity,
-      price: product.discountPrice || product.price,
+      price: product.price - (product.price * product.discountPrice / 100) || product.price,
     });
   }
 
@@ -29,12 +29,11 @@ exports.addToCart = async (userId, productId, quantity) => {
     (acc, item) => acc + item.quantity * item.price,
     0
   );
-
   return await cart.save();
 };
 
 exports.getCart = async (userId) => {
-  return await Cart.findOne({ user: userId }).populate("items.product");
+  return await Cart.findOne({ user: userId }).populate({path: "items.product",populate: { path: "images" }});
 };
 
 exports.updateCartItem = async (userId, productId, quantity) => {
@@ -63,5 +62,13 @@ exports.removeFromCart = async (userId, productId) => {
     0
   );
 
+  return await cart.save();
+};
+
+exports.deleteAllCart = async (userId) => {
+  const cart = await Cart.findOne({ user: userId });
+  if (!cart) throw new ErrorHandler("Cart not found", 404);
+  cart.items = [];
+  cart.totalPrice = 0;
   return await cart.save();
 };

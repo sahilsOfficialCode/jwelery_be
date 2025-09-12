@@ -89,7 +89,6 @@ exports.deleteImage = catchAsyncErrors(async (req, res, next) => {
       if (!imgDelete) {
         return next(new ErrorHandler("Image not found in this product", 404));
       }
-console.log("<><>imgDelete", imgDelete);
 
       await cloudinary.uploader.destroy(imgDelete.public_id);
 
