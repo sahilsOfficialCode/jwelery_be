@@ -5,26 +5,42 @@ const passport = require("./config/passport.js");
 const cors = require("cors");
 const path = require("path");
 const errorMiddleware = require("./middleware/error.js");
+const cookieParser = require('cookie-parser');
 
 const app = express();
 
 // Session setup
 console.log("SESSION_SECRET:", process.env.SESSION_SECRET);
-
+app.use(express.json());
+app.use(cookieParser());
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false },
+    cookie: { secure: false ,sameSite: 'lax'},
   })
 );
 
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use(express.json());
-app.use(cors());
+const allowedOrigins = [
+  "http://localhost:5173",   
+  "https://1h48b83c-5000.inc1.devtunnels.ms/"
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true, 
+}));
 
 // 👉 Serve static files from root/public
 app.use(express.static(path.join(__dirname, "..", "public")));
