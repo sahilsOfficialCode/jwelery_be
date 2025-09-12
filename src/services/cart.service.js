@@ -3,7 +3,9 @@ const Product = require("../model/product.model");
 const ErrorHandler = require("../utils/errorHandler");
 
 exports.addToCart = async (userId, productId, quantity) => {
+  console.log(productId);
   const product = await Product.findById(productId);
+  console.log("product", product);
   if (!product) throw new ErrorHandler("Product not found", 404);
 
   let cart = await Cart.findOne({ user: userId });
