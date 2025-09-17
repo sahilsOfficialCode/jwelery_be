@@ -17,7 +17,7 @@ exports.removeFromWishList = catchAsyncErrors(async (req, res, next) => {
   try {
     const wishList = await wishListService.removeFromWishList(
       req.user._id,
-      req.params.productid
+      req.params.productId
     );
     res.json({ status: true, data: wishList });
   } catch (err) {
