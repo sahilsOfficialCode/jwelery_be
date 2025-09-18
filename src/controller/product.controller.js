@@ -71,8 +71,6 @@ exports.createProduct = async (req, res, next) => {
 exports.getAllProducts = catchAsyncErrors(async (req, res, next) => {
   try {
     const products = await productService.getAllProducts(req.query);
-    // console.log("products", products);
-
     if (!products || products.length === 0)
       return next(new ErrorHandler("No products found", 404));
 
@@ -139,7 +137,6 @@ exports.deleteProductHard = catchAsyncErrors(async (req, res, next) => {
     }
     if (product.images && product.images.length > 0) {
       if (product.images.length > 1) {
-        console.log("product.images", product.images);
 
         await cloudinary.api.delete_resources(
           product.images.map((image) => image.public_id)

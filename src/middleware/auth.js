@@ -4,7 +4,6 @@ const catchAsyncErrors = require('./catchAsyncErrors');
 const ErrorHandler = require('../utils/errorHandler');
 
 exports.userAuthentication = catchAsyncErrors(async (req, res, next) => {
-    console.log("<><>auth working")
   let token;
   if (
     req.headers.authorization &&

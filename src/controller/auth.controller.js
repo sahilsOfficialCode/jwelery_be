@@ -117,8 +117,6 @@ exports.registerwithemailandPassword = catchAsyncErrors(async (req, res, next) =
 
 exports.registerWithEmailandPasswordVerify = catchAsyncErrors(async (req, res, next) => {
     const { name, email, otp, password, cpassword } = req.body
-    console.log("<><>req.body",req.body);
-    
     if (!email || !otp || !password) return res.status(400).send({ success: false, message: "Please fill in all required fields" })
     const emailData = await User.findOne({ email: email.toLowerCase(), is_register: false });
     if (!emailData) return res.status(400).send({ success: false, message: "please check the email something went wrong please contact admin" })
