@@ -32,8 +32,6 @@ exports.verifyOtpWithMobile = async (type,userId, otp) => {
         if ((new Date()+30*60*1000) > userData.otp.expiresAt) {
             return { status: false, message: "OTP expired" }
         }
-console.log("<><>userData",userData);
-console.log("<><>otp",otp);
 
         if (userData.otp.code !== otp) {
             return { status: false, message: "invalid OTP" }

@@ -1,10 +1,9 @@
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
-const ErrorHandler = require("../utils/errorHandler");
 const cartService = require("../services/cart.service");
 
 exports.addToCart = catchAsyncErrors(async (req, res, next) => {
   try {
-    const cart = cartService.addToCart(
+    const cart =await cartService.addToCart(
       req.user._id,
       req.body.product,
       req.body.quantity
@@ -43,6 +42,15 @@ exports.removeFromCart = async (req, res, next) => {
       req.user._id,
       req.params.productId
     );
+    res.json({ status: true, data: cart });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deleteAllCart = async (req, res, next) => {
+  try {
+    const cart = await cartService.deleteAllCart(req.user._id);
     res.json({ status: true, data: cart });
   } catch (err) {
     next(err);

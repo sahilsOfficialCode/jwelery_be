@@ -27,3 +27,15 @@ exports.updateCategory = async (id, data) => {
 exports.deleteCategory = async (id) => {
   return await Category.findByIdAndDelete(id)
 };
+
+exports.softDeleteCategory = async (id) => {
+  return await Category.findByIdAndUpdate(id, { is_deleted: true })
+};
+
+exports.getCategoriesForSearchName = async(query)=>{
+ return await Category.findOne({
+      name: { $regex: new RegExp(`^${query.category}$`, "i") },
+      is_deleted: false,
+      isActive: true,
+    }).lean();
+}

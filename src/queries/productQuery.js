@@ -9,3 +9,4 @@ exports.findProducts = async (filters, options) => {
     .populate("images","public_id secure_url _id")
     .populate("category");
 };
+

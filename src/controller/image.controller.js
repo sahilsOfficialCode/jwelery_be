@@ -1,6 +1,10 @@
 const { uploadBufferToCloudinary, cloudinary } = require("../utils/cloudinary");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const Image = require("../model/image.model");
+const product = require("../model/product.model");
+const imageService = require("../services/imageService");
+const productService = require("../services/product.service");
+const ErrorHandler = require("../utils/errorHandler");
 
 exports.uploadImages = catchAsyncErrors(async (req, res, next) => {
   const uploadedImages = {};
@@ -12,15 +16,16 @@ exports.uploadImages = catchAsyncErrors(async (req, res, next) => {
       "ecommerce/profile"
     );
      // Save to DB
-     const imgSave = await Image.create({
+     const imageResult = {
         public_id: result.public_id,
         secure_url: result.secure_url,
         format: result.format,
         resource_type: result.resource_type,
         size: result.bytes,
         folder: "ecommerce/profile",
-      });
-    uploadedImages.profile = imgSave._id;
+      }
+     const imgResult = await imageService.createImage(imageResult);
+    uploadedImages.profile = imgResult._id;
   }
 
   // Multiple product images
@@ -32,15 +37,16 @@ exports.uploadImages = catchAsyncErrors(async (req, res, next) => {
         "ecommerce/products"
       );
        // Save to DB
-     const imgSave = await Image.create({
+     const imageResult = {
         public_id: result.public_id,
         secure_url: result.secure_url,
         format: result.format,
         resource_type: result.resource_type,
         size: result.bytes,
         folder: "ecommerce/products",
-      });
-      uploadedImages.images.push(imgSave._id);
+     }
+     const imgResult = await imageService.createImage(imageResult);
+      uploadedImages.images.push(imgResult._id);
     }
   }
 
@@ -50,16 +56,51 @@ exports.uploadImages = catchAsyncErrors(async (req, res, next) => {
       req.files.banner[0].buffer,
       "ecommerce/banners"
     );
-    const mediaDoc = await Media.create({
+    const imageResult = {
         public_id: result.public_id,
         secure_url: result.secure_url,
         format: result.format,
         resource_type: result.resource_type,
         size: result.bytes,
         folder: "ecommerce/banners",
-      });
-    uploadedImages.banner = mediaDoc._id;
+      }
+    const imgResult = await imageService.createImage(imageResult)
+    uploadedImages.banner = imgResult._id;
   }
 
   res.status(200).json({ success: true, data: uploadedImages });
+});
+
+exports.deleteImage = catchAsyncErrors(async (req, res, next) => {
+    const { image_id } = req.query
+    const { id } = req.params
+    if(!id || !image_id){
+        return next(new ErrorHandler("Image id is required", 400));
+    }
+    const productData = await productService.getProductById(id);
+    if(!productData){
+        return next(new ErrorHandler("Product not found", 404));
+    }
+
+    const imgDelete = productData.images.find(
+        (img) => img._id.toString() === image_id
+      );
+
+      if (!imgDelete) {
+        return next(new ErrorHandler("Image not found in this product", 404));
+      }
+
+      await cloudinary.uploader.destroy(imgDelete.public_id);
+
+      await imageService.deleteImage(imgDelete._id);
+
+      productData.images = productData.images.filter(
+        (img) => img._id.toString() !== image_id
+      );
+      await productData.save();
+
+      res.status(200).json({
+        success: true,
+        message: "Image deleted successfully",
+      });
 });

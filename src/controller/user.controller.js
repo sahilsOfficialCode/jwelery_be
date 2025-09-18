@@ -64,22 +64,45 @@ exports.getAllUser = catchAsyncErrors(async (req, res, next) => {
 
 exports.getUserById = catchAsyncErrors(async(req, res, next)=>{
     const getUserById = await userService.getUserById(req.params.id)
+    if(getUserById.is_deleted){
+        return next(new ErrorHandler("User is deleted",404))
+    }
     if(!getUserById){
         return next(new ErrorHandler("No user found",404))
     }
     res.status(200).json({success:true,data:getUserById,message:"User fetched successfully"})
 })
 
+// implement soft delete
 exports.deleteUser = catchAsyncErrors(async(req, res, next)=>{
-    const deleteUser = await userService.deleteUser(req.params.id)
+    const deleteUser = await userService.getUserById(req.params.id)
     if(!deleteUser){
         return next(new ErrorHandler("No user found",404))
     }
+    if(deleteUser.is_deleted){
+        return next(new ErrorHandler("User is deleted",404))
+    }
+     await userService.softDeleteUser(req.params.id)
     res.status(200).json({success:true,data:deleteUser,message:"User deleted successfully"})
 })
 
+// exports.deleteUser = catchAsyncErrors(async(req, res, next)=>{
+//     const deleteUser = await userService.deleteUser(req.params.id)
+//     if(!deleteUser){
+//         return next(new ErrorHandler("No user found",404))
+//     }
+//     res.status(200).json({success:true,data:deleteUser,message:"User deleted successfully"})
+// })
+
 exports.updateUser = catchAsyncErrors(async(req, res, next)=>{
     const { role,is_blocked } = req.body 
+    const userData = await userService.getUserById(req.params.id)
+    if(!userData){
+        return next(new ErrorHandler("No user found",404))
+    }
+    if(userData.is_deleted){
+        return next(new ErrorHandler("User is deleted",404))
+    }
     const updateUser = await userService.updateUser(req.params.id,{role,is_blocked})
     if(!updateUser){
         return next(new ErrorHandler("No user found",404))
