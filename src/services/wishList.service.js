@@ -29,5 +29,22 @@ exports.removeFromWishList = async (userId, productId) => {
 };
 
 exports.getWishList = async (userId) => {
-  return await WishList.findOne({ user: userId }).populate("products");
+  return await WishList.findOne({ user: userId })
+  .populate({
+    path: "products",
+    populate: { path: "images" }
+  })
+  .lean()                      
+  .then(doc => {
+    if (!doc) return null;
+    return {
+      ...doc,
+      totalCount: doc.products?.length || 0,  
+    };
+  });
+};
+
+exports.countGetWishList = async (userId) => {
+  const wishList = await WishList.findOne({ user: userId }).lean();
+  return wishList ? wishList.products.length : 0;
 };

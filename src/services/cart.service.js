@@ -3,9 +3,7 @@ const Product = require("../model/product.model");
 const ErrorHandler = require("../utils/errorHandler");
 
 exports.addToCart = async (userId, productId, quantity) => {
-  console.log(productId);
   const product = await Product.findById(productId);
-  console.log("product", product);
   if (!product) throw new ErrorHandler("Product not found", 404);
 
   let cart = await Cart.findOne({ user: userId });
@@ -35,7 +33,24 @@ exports.addToCart = async (userId, productId, quantity) => {
 };
 
 exports.getCart = async (userId) => {
-  return await Cart.findOne({ user: userId }).populate({path: "items.product",populate: { path: "images" }});
+  const cart = await Cart.findOne({ user: userId })
+    .populate({
+      path: "items.product",
+      populate: { path: "images" },
+    })
+    .lean();
+
+  if (!cart) return null;
+
+  return {
+    ...cart,
+    count: cart.items?.length || 0,
+  };
+};
+
+exports.countCartDocuments = async (userId) => {
+  const cart = await Cart.findOne({ user: userId }).lean();
+  return cart ? cart.items.length : 0;
 };
 
 exports.updateCartItem = async (userId, productId, quantity) => {

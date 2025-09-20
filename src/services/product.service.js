@@ -1,6 +1,8 @@
+const Category = require("../model/category.model");
 const Product = require("../model/product.model");
 // queries
 const productQuery = require("../queries/productQuery");
+const categoryService = require("../services/category.service")
 
 exports.createProduct = async (data) => {
   return await Product.create(data);
@@ -14,7 +16,17 @@ exports.getAllProducts = async (query) => {
 
   // filter based on category
   if (query.category) {
-    filters.category = { $regex: new RegExp(`^${query.category}$`, "i") };
+    const categoryDoc = await Category.findOne({
+      name: { $regex: new RegExp(`^${query.category}$`, "i") },
+      is_deleted: false,
+      isActive: true,
+    }).lean();
+
+    if (categoryDoc) {
+      filters.category = categoryDoc._id;
+    } else {
+      return [];
+    }
   }
 
   // filter based on price
@@ -89,7 +101,15 @@ exports.userGetAllTrendingProducts = async (query) => {
     ];
   }
 
-  if (category) filter.category = category;
+  if (category) {
+    const categoryDoc = await categoryService.getCategoriesForSearchName(query)
+    if (categoryDoc) {
+      filter.category = categoryDoc._id;
+    } else {
+      // No category match => return empty
+      return [];
+    }
+  }
    if (isFeatured !== undefined) filter.isFeatured = isFeatured;
   if (minPrice || maxPrice) {
     filter.price = {};
