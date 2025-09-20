@@ -5,7 +5,7 @@ const passport = require("./config/passport.js");
 const cors = require("cors");
 const path = require("path");
 const errorMiddleware = require("./middleware/error.js");
-const cookieParser = require('cookie-parser');
+const cookieParser = require("cookie-parser");
 
 const app = express();
 
@@ -18,7 +18,7 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false ,sameSite: 'lax'},
+    cookie: { secure: false, sameSite: "lax" },
   })
 );
 
@@ -26,7 +26,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // const allowedOrigins = [
-//   "http://localhost:5173",   
+//   "http://localhost:5173",
 //   "https://1h48b83c-5000.inc1.devtunnels.ms/",
 //   "https://ecommerce-fe-git-dev-nishanth-ss-projects-6535f6dc.vercel.app/"
 // ];
@@ -40,10 +40,10 @@ app.use(passport.session());
 //       callback(new Error("Not allowed by CORS"));
 //     }
 //   },
-//   credentials: true, 
+//   credentials: true,
 // }));
 
- app.use(cors())
+app.use(cors());
 
 // 👉 Serve static files from root/public
 app.use(express.static(path.join(__dirname, "..", "public")));
@@ -68,6 +68,7 @@ const imageRouter = require("./routes/image.route.js");
 const cartRouter = require("./routes/cart.route.js");
 const wishListRouter = require("./routes/wishList.route.js");
 const productLogsRouter = require("./routes/productLogs.route.js");
+const orderRouter = require("./routes/order.route.js");
 
 app.use("/", indexRouter);
 app.use("/api/auth", authRoutes);
@@ -78,6 +79,7 @@ app.use("/api/image", imageRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/wishList", wishListRouter);
 app.use("/api/productLogs", productLogsRouter);
+app.use("/api/order", orderRouter);
 
 // Error middleware
 app.use(errorMiddleware);
