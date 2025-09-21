@@ -44,7 +44,7 @@ exports.getCart = async (userId) => {
 
   return {
     ...cart,
-    count: cart.items?.length || 0,
+    totalCount: cart.items?.length || 0,
   };
 };
 
