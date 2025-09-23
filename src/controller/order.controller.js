@@ -1,10 +1,13 @@
 const orderService = require("../services/orderService");
-const cartService = require("../services/cart.service")
+const cartService = require("../services/cart.service");
+const ErrorHandler = require("../utils/errorHandler");
 
 // create new order
 exports.createOrder = async (req, res, next) => {
   try {
     const { items, shippingAddress } = req.body;
+    if(items.length === 0) return next(new ErrorHandler("items field missing"))
+    if(!shippingAddress) return next(new ErrorHandler("shippingAddress field missing"))
     const { order, razorpayOrder } = await orderService.createOrder(
       req.user._id,
       items,
@@ -21,6 +24,10 @@ exports.verifyPayment = async (req, res, next) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
       req.body;
+      if(!razorpay_order_id) return next(new ErrorHandler("shippingAddress field missing"));
+      if(!razorpay_payment_id) return next(new ErrorHandler("razorpay_payment_id field missing"));
+      if(!razorpay_signature) return next(new ErrorHandler("razorpay_signature field missing"));
+      
     const {status,order} = await orderService.verifyPayment(
       razorpay_order_id,
       razorpay_payment_id,
