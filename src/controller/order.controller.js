@@ -1,4 +1,5 @@
 const orderService = require("../services/orderService");
+const cartService = require("../services/cart.service")
 
 // create new order
 exports.createOrder = async (req, res, next) => {
@@ -20,11 +21,14 @@ exports.verifyPayment = async (req, res, next) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
       req.body;
-    const order = await orderService.verifyPayment(
+    const {status,order} = await orderService.verifyPayment(
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature
     );
+    if(status){
+      await cartService.deleteAllCart(req.user._id)
+    }
     res.json({ status: true, order });
   } catch (err) {
     next(err);
