@@ -67,7 +67,7 @@ exports.verifyPayment = async (
 
   if (!order) throw new ErrorHandler("Order not found", 404);
 
-  return order;
+  return {status:true,order};
 };
 
 // get user orders

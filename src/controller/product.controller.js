@@ -87,12 +87,13 @@ exports.getAllProducts = catchAsyncErrors(async (req, res, next) => {
 // get product based on :id
 exports.getProductById = catchAsyncErrors(async (req, res, next) => {
   try {
-    const product = await productService.getProductById(req.params.id);
+    const {page=1,limit=2} = req.query
+    const {status,data,message} = await productService.getProductById(req.params.id,page,limit)
 
-    if (!product || product.length === 0)
-      return next(new ErrorHandler("No product found", 404));
+    if (!status || data.length === 0)
+      return res.status(200).send({success:true,data,message:message})
 
-    res.json({ success: true, data: product });
+    res.json({ success: true, data: data,message });
   } catch (error) {
     next(error);
   }
