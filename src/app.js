@@ -70,6 +70,7 @@ const wishListRouter = require("./routes/wishList.route.js");
 const productLogsRouter = require("./routes/productLogs.route.js");
 const orderRouter = require('./routes/order.route.js')
 const addressRouter = require('./routes/address.route.js');
+const reviewRouter = require('./routes/review.route.js');
 
 app.use("/", indexRouter);
 app.use("/api/auth", authRoutes);
@@ -82,6 +83,7 @@ app.use("/api/wishList", wishListRouter);
 app.use("/api/productLogs", productLogsRouter);
 app.use("/api/order",orderRouter)
 app.use("/api/address",addressRouter)
+app.use("/api/review",reviewRouter);
 
 // Error middleware
 app.use(errorMiddleware);

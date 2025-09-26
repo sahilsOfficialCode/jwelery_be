@@ -4,7 +4,8 @@ const ErrorHandler = require("../utils/errorHandler");
 
 exports.addToCart = async (userId, productId, quantity) => {
   const product = await Product.findById(productId);
-  if (!product) throw new ErrorHandler("Product not found", 404);
+  if (!product) 
+    return {status:false,data:product,message:"Product not found"}
 
   let cart = await Cart.findOne({ user: userId });
   if (!cart) {
@@ -29,7 +30,8 @@ exports.addToCart = async (userId, productId, quantity) => {
     (acc, item) => acc + item.quantity * item.price,
     0
   );
-  return await cart.save();
+  const cartAdd = await cart.save();
+  return { status:true, data:cartAdd, message:"Item added to cart successfully"}
 };
 
 exports.getCart = async (userId) => {
@@ -84,8 +86,10 @@ exports.removeFromCart = async (userId, productId) => {
 
 exports.deleteAllCart = async (userId) => {
   const cart = await Cart.findOne({ user: userId });
-  if (!cart) throw new ErrorHandler("Cart not found", 404);
+  if(cart.items.length === 0)
+  return {status:false,data:cart,message:"There are no products in your cart"}
   cart.items = [];
   cart.totalPrice = 0;
-  return await cart.save();
+  const cartUpdate = await cart.save();
+  return {status:true,data:cartUpdate,message:"All items removed from cart successfully"}
 };
