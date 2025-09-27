@@ -9,7 +9,7 @@ router.post("/verify-payment", orderController.verifyPayment);
 router.get("/", orderController.getUserOrders);
 router.put("/cancel/:orderId", orderController.cancelOrder);
 router.patch(
-  "/admin/order/:orderId/status",
+  "/:orderId/status",
   authorizeRoles("admin"),
   orderController.updateOrderStatus
 );
