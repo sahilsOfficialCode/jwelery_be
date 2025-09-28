@@ -51,10 +51,14 @@ exports.getLatestProducts = async (limit = 5) => {
 // };
 
 exports.getLatestOrders = async (limit = 5) => {
-  return Order.find().sort({ createdAt: -1 }).limit(limit).populate({
-    path: "items.product", // ✅ correct path
-    select: "name price images category", // optional fields from Product
-  });
+  return Order.find()
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .populate({
+      path: "items.product",
+      select: "name price images category",
+      populate: [{ path: "category", select: "name" }, { path: "images" }],
+    });
 };
 
 // Revenue grouped by date
