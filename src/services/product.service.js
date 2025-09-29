@@ -78,12 +78,103 @@ exports.getAllProducts = async (query) => {
   };
 };
 
-// get single product using id
-// exports.getProductById = async (id) => {
-//   return await Product.findOne({ _id: id, isActive: true })
-//     .populate("category")
-//     .populate("images");
-// };
+exports.getProductById = async (id,page,limit) => {
+  page = parseInt(page)
+  limit = parseInt(limit)
+  const skip = (page - 1) * limit;
+
+  const result = await Product.aggregate([
+  { $match: { _id: new mongoose.Types.ObjectId(id), isActive: true } },
+
+  // 🔹 Populate category
+  {
+    $lookup: {
+      from: "categories", // collection name for categories
+      localField: "category",
+      foreignField: "_id",
+      as: "category"
+    }
+  },
+  { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+
+  // 🔹 Populate images
+  {
+    $lookup: {
+      from: "images",
+      let: { imgIds: "$images" },
+      pipeline: [
+        { $match: { $expr: { $in: ["$_id", "$$imgIds"] } } },
+        { $project: { public_id: 1, secure_url: 1, format: 1, resource_type: 1, size: 1 } }
+      ],
+      as: "images"
+    }
+  },
+
+  // 🔹 Reviews with pagination & user info
+  {
+    $lookup: {
+      from: "reviews",
+      let: { productId: "$_id" },
+      pipeline: [
+        { $match: { $expr: { $eq: ["$product", "$$productId"] }, status: { $ne: "rejected" } } },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        {
+          $lookup: {
+            from: "users",
+            localField: "user",
+            foreignField: "_id",
+            as: "userInfo"
+          }
+        },
+        { $unwind: "$userInfo" },
+        {
+          $project: {
+            rating: 1,
+            comment: 1,
+            title: 1,
+            createdAt: 1,
+            "user.name": "$userInfo.name",
+            "user.email": "$userInfo.email"
+          }
+        }
+      ],
+      as: "reviews"
+    }
+  },
+
+  // 🔹 All reviews for statistics
+  {
+    $lookup: {
+      from: "reviews",
+      let: { productId: "$_id" },
+      pipeline: [
+        { $match: { $expr: { $eq: ["$product", "$$productId"] }, status: { $ne: "rejected" } } },
+        { $project: { rating: 1 } }
+      ],
+      as: "allReviews"
+    }
+  },
+
+  // 🔹 Add statistics
+  {
+    $addFields: {
+      averageRating: { $avg: "$allReviews.rating" },
+      reviewCount: { $size: "$allReviews" },
+      positiveReviewCount: { $size: { $filter: { input: "$allReviews", cond: { $gte: ["$$this.rating", 4] } } } },
+      negativeReviewCount: { $size: { $filter: { input: "$allReviews", cond: { $lte: ["$$this.rating", 2] } } } },
+      fiveStarCount: { $size: { $filter: { input: "$allReviews", cond: { $eq: ["$$this.rating", 5] } } } }
+    }
+  },
+
+  // Remove allReviews to reduce payload
+  { $project: { allReviews: 0 } }
+]);
+
+
+  return {status:true,data:result[0],message:"product with reviews fetch successfully"}
+};
 
 exports.getProductById = async (id,page,limit) => {
   page = parseInt(page)

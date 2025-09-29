@@ -89,11 +89,20 @@ exports.getAllProducts = catchAsyncErrors(async (req, res, next) => {
 exports.getProductById = catchAsyncErrors(async (req, res, next) => {
    const {page=1,limit=2} = req.query
     const {status,data,message} = await productService.getProductById(req.params.id,page,limit)
+  try {
+    const {page=1,limit=2} = req.query
+    const {status,data,message} = await productService.getProductById(req.params.id,page,limit)
 
+    if (!status || data.length === 0)
+      return res.status(200).send({success:true,data,message:message})
     if (!status || data.length === 0)
       return res.status(200).send({success:true,data,message:message})
 
     res.json({ success: true, data: data,message });
+    res.json({ success: true, data: data,message });
+  } catch (error) {
+    next(error);
+  }
 });
 
 // update product using id
