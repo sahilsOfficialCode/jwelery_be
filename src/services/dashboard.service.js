@@ -46,8 +46,19 @@ exports.getLatestProducts = async (limit = 5) => {
 };
 
 // Latest orders
+// exports.getLatestOrders = async (limit = 5) => {
+//   return Order.find().sort({ createdAt: -1 }).limit(limit);
+// };
+
 exports.getLatestOrders = async (limit = 5) => {
-  return Order.find().sort({ createdAt: -1 }).limit(limit);
+  return Order.find()
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .populate({
+      path: "items.product",
+      select: "name price images category",
+      populate: [{ path: "category", select: "name" }, { path: "images" }],
+    });
 };
 
 // Revenue grouped by date

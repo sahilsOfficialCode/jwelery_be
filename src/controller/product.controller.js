@@ -70,6 +70,7 @@ exports.createProduct = async (req, res, next) => {
 // list all products
 exports.getAllProducts = catchAsyncErrors(async (req, res, next) => {
   try {
+    console.log("Query ===>>>", req.query);
     const products = await productService.getAllProducts(req.query);
     if (!products || products.length === 0)
       return next(new ErrorHandler("No products found", 404));
@@ -86,13 +87,18 @@ exports.getAllProducts = catchAsyncErrors(async (req, res, next) => {
 
 // get product based on :id
 exports.getProductById = catchAsyncErrors(async (req, res, next) => {
+   const {page=1,limit=2} = req.query
+    const {status,data,message} = await productService.getProductById(req.params.id,page,limit)
   try {
     const {page=1,limit=2} = req.query
     const {status,data,message} = await productService.getProductById(req.params.id,page,limit)
 
     if (!status || data.length === 0)
       return res.status(200).send({success:true,data,message:message})
+    if (!status || data.length === 0)
+      return res.status(200).send({success:true,data,message:message})
 
+    res.json({ success: true, data: data,message });
     res.json({ success: true, data: data,message });
   } catch (error) {
     next(error);
@@ -128,7 +134,7 @@ exports.deleteProduct = catchAsyncErrors(async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-}); 
+});
 // delete product using id
 exports.deleteProductHard = catchAsyncErrors(async (req, res, next) => {
   try {
@@ -138,7 +144,6 @@ exports.deleteProductHard = catchAsyncErrors(async (req, res, next) => {
     }
     if (product.images && product.images.length > 0) {
       if (product.images.length > 1) {
-
         await cloudinary.api.delete_resources(
           product.images.map((image) => image.public_id)
         );
@@ -166,17 +171,20 @@ exports.deleteProductHard = catchAsyncErrors(async (req, res, next) => {
   }
 });
 
-
 // user user list all product
 
-exports.userGetAllTrendingProducts = catchAsyncErrors(async (req, res, next) => {
-const productData = await productService.userGetAllTrendingProducts(req.query);
-if(productData.length === 0){
-    return next(new ErrorHandler("No products found",404))
-}
-return res.status(200).json({
-    success:true,
-    count:productData.total,
-    products:productData.products
-})  
-});
+exports.userGetAllTrendingProducts = catchAsyncErrors(
+  async (req, res, next) => {
+    const productData = await productService.userGetAllTrendingProducts(
+      req.query
+    );
+    if (productData.length === 0) {
+      return next(new ErrorHandler("No products found", 404));
+    }
+    return res.status(200).json({
+      success: true,
+      count: productData.total,
+      products: productData.products,
+    });
+  }
+);

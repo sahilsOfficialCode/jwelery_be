@@ -67,7 +67,7 @@ exports.verifyPayment = async (
 
   if (!order) throw new ErrorHandler("Order not found", 404);
 
-  return {status:true,order};
+  return { status: true, order };
 };
 
 // get user orders
@@ -86,5 +86,27 @@ exports.cancelOrder = async (userId, orderId) => {
 
   order.orderStatus = "cancelled";
   await order.save();
+  return order;
+};
+
+exports.updateOrderStatus = async (orderId, newStatus) => {
+  const validStatuses = [
+    "placed",
+    "confirmed",
+    "shipped",
+    "delivered",
+    "cancelled",
+  ];
+
+  if (!validStatuses.includes(newStatus)) {
+    throw new ErrorHandler("Invalid order status", 400);
+  }
+
+  const order = await Order.findById(orderId);
+  if (!order) throw new ErrorHandler("Order not found", 404);
+
+  order.orderStatus = newStatus;
+  await order.save();
+
   return order;
 };
