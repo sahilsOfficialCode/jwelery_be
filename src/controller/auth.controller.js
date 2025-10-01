@@ -77,7 +77,8 @@ const generateOTP = () => {
 
 exports.registerwithemailandPassword = catchAsyncErrors(async (req, res, next) => {
     const { email, name } = req.body
-    if (!email) return next(new ErrorHandler("please enter all fields"))
+    if (!email) return next(new ErrorHandler("please enter email fields"))
+        if (!name) return next(new ErrorHandler("please enter name fields"))
     const emailExist = await User.findOne({ email, is_register: true });
     if (emailExist) return next(new ErrorHandler("email already exist", 400));
 
