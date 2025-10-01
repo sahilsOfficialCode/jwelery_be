@@ -56,6 +56,15 @@ exports.getUserOrders = async (req, res, next) => {
     next(err);
   }
 };
+// get all orders for admin
+exports.getAllUsersOrders = async (req, res, next) => {
+  try {
+    const orders = await orderService.getAllUserOrders(req.query);
+    res.json({ status: true, orders });
+  } catch (err) {
+    next(err);
+  }
+};
 
 // cancel order
 exports.cancelOrder = async (req, res, next) => {
