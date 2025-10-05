@@ -29,7 +29,6 @@ exports.createProduct = async (data) => {
 //         count: 0,
 //         totalPages: 0,
 //         currentPage: 1,
-//         categoryCounts: [],
 //       };
 //     }
 //   }
@@ -59,39 +58,13 @@ exports.createProduct = async (data) => {
 //   const skip = (page - 1) * limit;
 
 //   // Execute queries in parallel
-//   const [products, count, categoryCounts] = await Promise.all([
+//   const [products, count] = await Promise.all([
 //     productQuery.findProducts(filters, {
 //       skip,
 //       limit,
 //       sort: { createdAt: -1 },
 //     }),
 //     Product.countDocuments(filters),
-//     Product.aggregate([
-//       { $match: { is_deleted: false, isActive: true } },
-//       {
-//         $group: {
-//           _id: "$category",
-//           count: { $sum: 1 },
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "categories",
-//           localField: "_id",
-//           foreignField: "_id",
-//           as: "categoryDetails",
-//         },
-//       },
-//       { $unwind: "$categoryDetails" },
-//       {
-//         $project: {
-//           _id: 0,
-//           categoryId: "$categoryDetails._id",
-//           categoryName: "$categoryDetails.name",
-//           count: 1,
-//         },
-//       },
-//     ]),
 //   ]);
 
 //   const totalPages = Math.ceil(count / limit);
@@ -102,45 +75,45 @@ exports.createProduct = async (data) => {
 //     totalPages,
 //     currentPage: page,
 //     limit,
-//     categoryCounts, // new field added
 //   };
 // };
-
 exports.getAllProducts = async (query) => {
   const filters = { is_deleted: false, isActive: true };
 
-  // Category filter (multiple categories allowed)
-  if (query.categories && Array.isArray(query.categories)) {
+  // Handle single OR multiple categories
+  if (query.category) {
+    // Split by comma and trim
+    const categoryNames = query.category.split(",").map((c) => c.trim());
+
     const categoryDocs = await Category.find({
-      name: {
-        $in: query.categories.map((name) => new RegExp(`^${name}$`, "i")),
-      },
+      name: { $in: categoryNames.map((name) => new RegExp(`^${name}$`, "i")) },
       is_deleted: false,
       isActive: true,
     }).lean();
 
     if (categoryDocs.length > 0) {
-      filters.category = { $in: categoryDocs.map((cat) => cat._id) };
+      filters.category = { $in: categoryDocs.map((c) => c._id) };
     } else {
-      // If none match, return empty
       return {
         products: [],
         count: 0,
         totalPages: 0,
         currentPage: 1,
         limit: parseInt(query.limit) || 10,
-        categoryCounts: [],
       };
     }
   }
 
   // Price filters
   if (query.minPrice && query.maxPrice) {
-    filters.price = { $gte: query.minPrice, $lte: query.maxPrice };
+    filters.price = {
+      $gte: Number(query.minPrice),
+      $lte: Number(query.maxPrice),
+    };
   } else if (query.minPrice) {
-    filters.price = { $gte: query.minPrice };
+    filters.price = { $gte: Number(query.minPrice) };
   } else if (query.maxPrice) {
-    filters.price = { $lte: query.maxPrice };
+    filters.price = { $lte: Number(query.maxPrice) };
   }
 
   // Search filter
@@ -159,39 +132,13 @@ exports.getAllProducts = async (query) => {
   const skip = (page - 1) * limit;
 
   // Execute queries in parallel
-  const [products, count, categoryCounts] = await Promise.all([
+  const [products, count] = await Promise.all([
     productQuery.findProducts(filters, {
       skip,
       limit,
       sort: { createdAt: -1 },
     }),
     Product.countDocuments(filters),
-    Product.aggregate([
-      { $match: { is_deleted: false, isActive: true } }, // total counts
-      {
-        $group: {
-          _id: "$category",
-          count: { $sum: 1 },
-        },
-      },
-      {
-        $lookup: {
-          from: "categories",
-          localField: "_id",
-          foreignField: "_id",
-          as: "categoryDetails",
-        },
-      },
-      { $unwind: "$categoryDetails" },
-      {
-        $project: {
-          _id: 0,
-          categoryId: "$categoryDetails._id",
-          categoryName: "$categoryDetails.name",
-          count: 1,
-        },
-      },
-    ]),
   ]);
 
   const totalPages = Math.ceil(count / limit);
@@ -202,147 +149,6 @@ exports.getAllProducts = async (query) => {
     totalPages,
     currentPage: page,
     limit,
-    categoryCounts,
-  };
-};
-
-exports.getProductById = async (id, page, limit) => {
-  page = parseInt(page);
-  limit = parseInt(limit);
-  const skip = (page - 1) * limit;
-
-  const result = await Product.aggregate([
-    { $match: { _id: new mongoose.Types.ObjectId(id), isActive: true } },
-
-    // 🔹 Populate category
-    {
-      $lookup: {
-        from: "categories", // collection name for categories
-        localField: "category",
-        foreignField: "_id",
-        as: "category",
-      },
-    },
-    { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
-
-    // 🔹 Populate images
-    {
-      $lookup: {
-        from: "images",
-        let: { imgIds: "$images" },
-        pipeline: [
-          { $match: { $expr: { $in: ["$_id", "$$imgIds"] } } },
-          {
-            $project: {
-              public_id: 1,
-              secure_url: 1,
-              format: 1,
-              resource_type: 1,
-              size: 1,
-            },
-          },
-        ],
-        as: "images",
-      },
-    },
-
-    // 🔹 Reviews with pagination & user info
-    {
-      $lookup: {
-        from: "reviews",
-        let: { productId: "$_id" },
-        pipeline: [
-          {
-            $match: {
-              $expr: { $eq: ["$product", "$$productId"] },
-              status: { $ne: "rejected" },
-            },
-          },
-          { $sort: { createdAt: -1 } },
-          { $skip: skip },
-          { $limit: limit },
-          {
-            $lookup: {
-              from: "users",
-              localField: "user",
-              foreignField: "_id",
-              as: "userInfo",
-            },
-          },
-          { $unwind: "$userInfo" },
-          {
-            $project: {
-              rating: 1,
-              comment: 1,
-              title: 1,
-              createdAt: 1,
-              "user.name": "$userInfo.name",
-              "user.email": "$userInfo.email",
-            },
-          },
-        ],
-        as: "reviews",
-      },
-    },
-
-    // 🔹 All reviews for statistics
-    {
-      $lookup: {
-        from: "reviews",
-        let: { productId: "$_id" },
-        pipeline: [
-          {
-            $match: {
-              $expr: { $eq: ["$product", "$$productId"] },
-              status: { $ne: "rejected" },
-            },
-          },
-          { $project: { rating: 1 } },
-        ],
-        as: "allReviews",
-      },
-    },
-
-    // 🔹 Add statistics
-    {
-      $addFields: {
-        averageRating: { $avg: "$allReviews.rating" },
-        reviewCount: { $size: "$allReviews" },
-        positiveReviewCount: {
-          $size: {
-            $filter: {
-              input: "$allReviews",
-              cond: { $gte: ["$$this.rating", 4] },
-            },
-          },
-        },
-        negativeReviewCount: {
-          $size: {
-            $filter: {
-              input: "$allReviews",
-              cond: { $lte: ["$$this.rating", 2] },
-            },
-          },
-        },
-        fiveStarCount: {
-          $size: {
-            $filter: {
-              input: "$allReviews",
-              cond: { $eq: ["$$this.rating", 5] },
-            },
-          },
-        },
-      },
-    },
-
-    // Remove allReviews to reduce payload
-    { $project: { allReviews: 0 } },
-  ]);
-
-  return {
-    status: true,
-    data: result[0],
-    message: "product with reviews fetch successfully",
   };
 };
 
