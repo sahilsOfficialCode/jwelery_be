@@ -31,4 +31,8 @@ router.post("/verify",authController.registerWithEmailandPasswordVerify)
 
 router.post('/login',authController.loginWithEmailAndPassword)
 
+router.post('/reset-password',authController.resetPassword);
+
+router.post('/update-password',authController.updatePassword);
+
 module.exports = router

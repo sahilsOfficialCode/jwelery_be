@@ -67,12 +67,101 @@ exports.verifyPayment = async (
 
   if (!order) throw new ErrorHandler("Order not found", 404);
 
-  return {status:true,order};
+  return { status: true, order };
 };
 
 // get user orders
 exports.getUserOrders = async (userId) => {
-  return await Order.find({ user: userId }).populate("items.product");
+  const data =  await Order.find({ user: userId })
+  .populate({
+    path: "items.product",
+    model: "Product",
+    populate: {
+      path: "images",            // populate images inside product
+      model: "images",           // note: model name must match your Image model
+    },
+  });
+  console.log("<><>data",data)
+  return data
+};
+
+// get user orders
+exports.getAllUserOrders = async (query) => {
+  try {
+    const {
+      search,                // search by name, phone, notes
+      status,                // filter by orderStatus
+      payment_status,        // filter by payment.status
+      start_date,            // filter by createdAt >= start_date
+      end_date,              // filter by createdAt <= end_date
+      userId,                // optional: filter by user
+      page = 1,
+      limit = 10,
+      sort_by = "createdAt",
+      order = "desc"
+    } = query;
+
+    const isFetchAll = limit === "all";
+    const pageNum = parseInt(page) || 1;
+    const limitNum = isFetchAll ? 0 : parseInt(limit) || 10;
+    const skip = isFetchAll ? 0 : (pageNum - 1) * limitNum;
+
+    // 🔹 Filters
+    const filters = {};
+
+    if (status) filters.orderStatus = status;
+    if (payment_status) filters["payment.status"] = payment_status;
+    if (userId) filters.user = userId;
+
+    if (start_date || end_date) {
+      filters.createdAt = {};
+      if (start_date) filters.createdAt.$gte = new Date(start_date);
+      if (end_date) filters.createdAt.$lte = new Date(end_date);
+    }
+
+    if (search) {
+      filters.$or = [
+        { "shippingAddress.name": { $regex: search, $options: "i" } },
+        { "shippingAddress.phone": { $regex: search, $options: "i" } },
+        { notes: { $regex: search, $options: "i" } }
+      ];
+    }
+
+    // 🔹 Query builder
+    let queryBuilder = Order.find(filters)
+      .populate({
+        path: "items.product",
+        populate: { path: "images", model: "images" }
+      })
+      .populate("user", "name email")
+      .sort({ [sort_by]: order === "asc" ? 1 : -1 })
+      .lean();
+
+    if (!isFetchAll) {
+      queryBuilder = queryBuilder.skip(skip).limit(limitNum);
+    }
+
+    const result = await queryBuilder.exec();
+
+    // 🔹 Total count
+    const total = await Order.countDocuments(filters);
+
+    return {
+      status: true,
+      data: {
+        result,
+        total,
+        page: isFetchAll ? 1 : pageNum,
+        limit: isFetchAll ? total : limitNum
+      },
+      message: "Orders fetched successfully"
+    };
+  } catch (error) {
+    return {
+      status: false,
+      message: `Something went wrong. (${error.message})`
+    };
+  }
 };
 
 // cancel order before shipped
@@ -86,5 +175,27 @@ exports.cancelOrder = async (userId, orderId) => {
 
   order.orderStatus = "cancelled";
   await order.save();
+  return order;
+};
+
+exports.updateOrderStatus = async (orderId, newStatus) => {
+  const validStatuses = [
+    "placed",
+    "confirmed",
+    "shipped",
+    "delivered",
+    "cancelled",
+  ];
+
+  if (!validStatuses.includes(newStatus)) {
+    throw new ErrorHandler("Invalid order status", 400);
+  }
+
+  const order = await Order.findById(orderId);
+  if (!order) throw new ErrorHandler("Order not found", 404);
+
+  order.orderStatus = newStatus;
+  await order.save();
+
   return order;
 };

@@ -6,8 +6,10 @@ const ErrorHandler = require("../utils/errorHandler");
 exports.createOrder = async (req, res, next) => {
   try {
     const { items, shippingAddress } = req.body;
-    if(items.length === 0) return next(new ErrorHandler("items field missing"))
-    if(!shippingAddress) return next(new ErrorHandler("shippingAddress field missing"))
+    if (items.length === 0)
+      return next(new ErrorHandler("items field missing"));
+    if (!shippingAddress)
+      return next(new ErrorHandler("shippingAddress field missing"));
     const { order, razorpayOrder } = await orderService.createOrder(
       req.user._id,
       items,
@@ -24,17 +26,20 @@ exports.verifyPayment = async (req, res, next) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
       req.body;
-      if(!razorpay_order_id) return next(new ErrorHandler("shippingAddress field missing"));
-      if(!razorpay_payment_id) return next(new ErrorHandler("razorpay_payment_id field missing"));
-      if(!razorpay_signature) return next(new ErrorHandler("razorpay_signature field missing"));
-      
-    const {status,order} = await orderService.verifyPayment(
+    if (!razorpay_order_id)
+      return next(new ErrorHandler("shippingAddress field missing"));
+    if (!razorpay_payment_id)
+      return next(new ErrorHandler("razorpay_payment_id field missing"));
+    if (!razorpay_signature)
+      return next(new ErrorHandler("razorpay_signature field missing"));
+
+    const { status, order } = await orderService.verifyPayment(
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature
     );
-    if(status){
-      await cartService.deleteAllCart(req.user._id)
+    if (status) {
+      await cartService.deleteAllCart(req.user._id);
     }
     res.json({ status: true, order });
   } catch (err) {
@@ -46,6 +51,15 @@ exports.verifyPayment = async (req, res, next) => {
 exports.getUserOrders = async (req, res, next) => {
   try {
     const orders = await orderService.getUserOrders(req.user._id);
+    res.status(200).send({ status: true, orders });
+  } catch (err) {
+    next(err);
+  }
+};
+// get all orders for admin
+exports.getAllUsersOrders = async (req, res, next) => {
+  try {
+    const orders = await orderService.getAllUserOrders(req.query);
     res.json({ status: true, orders });
   } catch (err) {
     next(err);
@@ -59,6 +73,23 @@ exports.cancelOrder = async (req, res, next) => {
       req.user._id,
       req.params.orderId
     );
+    res.json({ status: true, order });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// change order status
+exports.updateOrderStatus = async (req, res, next) => {
+  try {
+    const { orderId } = req.params;
+    const { status } = req.body;
+
+    if (!status) {
+      return next(new ErrorHandler("Missing status field", 400));
+    }
+    const order = await orderService.updateOrderStatus(orderId, status);
+
     res.json({ status: true, order });
   } catch (err) {
     next(err);
