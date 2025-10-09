@@ -1,175 +1,302 @@
 const Category = require("../model/category.model");
 const Product = require("../model/product.model");
+const mongoose = require("mongoose");
 // queries
 const productQuery = require("../queries/productQuery");
-const categoryService = require("../services/category.service")
-const mongoose = require('mongoose')
+const categoryService = require("../services/category.service");
 
 exports.createProduct = async (data) => {
   return await Product.create(data);
 };
 
 // get all products
-exports.getAllProducts = async (query) => {
-  const filters = {};
-  filters.is_deleted = false
-  filters.isActive = true
+// exports.getAllProducts = async (query) => {
+//   const filters = { is_deleted: false, isActive: true };
 
-  // filter based on category
+//   // Category filter
+//   if (query.category) {
+//     const categoryDoc = await Category.findOne({
+//       name: { $regex: new RegExp(`^${query.category}$`, "i") },
+//       is_deleted: false,
+//       isActive: true,
+//     }).lean();
+
+//     if (categoryDoc) {
+//       filters.category = categoryDoc._id;
+//     } else {
+//       return {
+//         products: [],
+//         count: 0,
+//         totalPages: 0,
+//         currentPage: 1,
+//       };
+//     }
+//   }
+
+//   // Price filters
+//   if (query.minPrice && query.maxPrice) {
+//     filters.price = { $gte: query.minPrice, $lte: query.maxPrice };
+//   } else if (query.minPrice) {
+//     filters.price = { $gte: query.minPrice };
+//   } else if (query.maxPrice) {
+//     filters.price = { $lte: query.maxPrice };
+//   }
+
+//   // Search filter
+//   if (query.search) {
+//     const regex = new RegExp(query.search, "i");
+//     filters.$or = [
+//       { name: regex },
+//       { description: regex },
+//       { material: regex },
+//     ];
+//   }
+
+//   // Pagination setup
+//   const page = Math.max(parseInt(query.page) || 1, 1); // default 1
+//   const limit = Math.max(parseInt(query.limit) || 10, 1); // default 10
+//   const skip = (page - 1) * limit;
+
+//   // Execute queries in parallel
+//   const [products, count] = await Promise.all([
+//     productQuery.findProducts(filters, {
+//       skip,
+//       limit,
+//       sort: { createdAt: -1 },
+//     }),
+//     Product.countDocuments(filters),
+//   ]);
+
+//   const totalPages = Math.ceil(count / limit);
+
+//   return {
+//     products,
+//     count,
+//     totalPages,
+//     currentPage: page,
+//     limit,
+//   };
+// };
+exports.getAllProducts = async (query) => {
+  const filters = { is_deleted: false, isActive: true };
+
+  // Handle single OR multiple categories
   if (query.category) {
-    const categoryDoc = await Category.findOne({
-      name: { $regex: new RegExp(`^${query.category}$`, "i") },
+    // Split by comma and trim
+    const categoryNames = query.category.split(",").map((c) => c.trim());
+
+    const categoryDocs = await Category.find({
+      name: { $in: categoryNames.map((name) => new RegExp(`^${name}$`, "i")) },
       is_deleted: false,
       isActive: true,
     }).lean();
 
-    if (categoryDoc) {
-      filters.category = categoryDoc._id;
+    if (categoryDocs.length > 0) {
+      filters.category = { $in: categoryDocs.map((c) => c._id) };
     } else {
-      return [];
+      return {
+        products: [],
+        count: 0,
+        totalPages: 0,
+        currentPage: 1,
+        limit: parseInt(query.limit) || 10,
+      };
     }
   }
 
-  // filter based on price
+  // Price filters
   if (query.minPrice && query.maxPrice) {
-    filters.price = { $gte: query.minPrice, $lte: query.maxPrice };
+    filters.price = {
+      $gte: Number(query.minPrice),
+      $lte: Number(query.maxPrice),
+    };
   } else if (query.minPrice) {
-    filters.price = { $gte: query.minPrice };
+    filters.price = { $gte: Number(query.minPrice) };
   } else if (query.maxPrice) {
-    filters.price = { $lte: query.maxPrice };
+    filters.price = { $lte: Number(query.maxPrice) };
   }
 
-  // filter based on search
+  // Search filter
   if (query.search) {
     const regex = new RegExp(query.search, "i");
     filters.$or = [
       { name: regex },
       { description: regex },
-      { category: regex },
       { material: regex },
     ];
   }
 
-  const page = parseInt(query.page) || 1;
-  const limit = parseInt(query.limit) || 10;
-  const options = {
-    skip: (page - 1) * limit,
-    limit,
-    sort: { createdAt: -1 },
-  };
-
-  return await productQuery.findProducts(filters, options);
-};
-
-exports.getProductById = async (id,page,limit) => {
-  page = parseInt(page)
-  limit = parseInt(limit)
+  // Pagination setup
+  const page = Math.max(parseInt(query.page) || 1, 1);
+  const limit = Math.max(parseInt(query.limit) || 10, 1);
   const skip = (page - 1) * limit;
 
+  // Execute queries in parallel
+  const [products, count] = await Promise.all([
+    productQuery.findProducts(filters, {
+      skip,
+      limit,
+      sort: { createdAt: -1 },
+    }),
+    Product.countDocuments(filters),
+  ]);
+
+  const totalPages = Math.ceil(count / limit);
+
+  return {
+    products,
+    count,
+    totalPages,
+    currentPage: page,
+    limit,
+  };
+};
+
+exports.getProductById = async (id, page, limit) => {
+  page = parseInt(page);
+  limit = parseInt(limit);
+  const skip = (page - 1) * limit;
+
+  console.log("<><>skip", typeof skip, skip);
+
   const result = await Product.aggregate([
-  { $match: { _id: new mongoose.Types.ObjectId(id), isActive: true } },
+    { $match: { _id: new mongoose.Types.ObjectId(id), isActive: true } },
 
-  // 🔹 Populate category
-  {
-    $lookup: {
-      from: "categories", // collection name for categories
-      localField: "category",
-      foreignField: "_id",
-      as: "category"
-    }
-  },
-  { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: "categories",
+        localField: "category",
+        foreignField: "_id",
+        as: "category",
+      },
+    },
+    { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
 
-  // 🔹 Populate images
-  {
-    $lookup: {
-      from: "images",
-      let: { imgIds: "$images" },
-      pipeline: [
-        { $match: { $expr: { $in: ["$_id", "$$imgIds"] } } },
-        { $project: { public_id: 1, secure_url: 1, format: 1, resource_type: 1, size: 1 } }
-      ],
-      as: "images"
-    }
-  },
+    {
+      $lookup: {
+        from: "images",
+        let: { imgIds: "$images" },
+        pipeline: [
+          { $match: { $expr: { $in: ["$_id", "$$imgIds"] } } },
+          {
+            $project: {
+              public_id: 1,
+              secure_url: 1,
+              format: 1,
+              resource_type: 1,
+              size: 1,
+            },
+          },
+        ],
+        as: "images",
+      },
+    },
 
-  // 🔹 Reviews with pagination & user info
-  {
-    $lookup: {
-      from: "reviews",
-      let: { productId: "$_id" },
-      pipeline: [
-        { $match: { $expr: { $eq: ["$product", "$$productId"] }, status: { $ne: "rejected" } } },
-        { $sort: { createdAt: -1 } },
-        { $skip: skip },
-        { $limit: limit },
-        {
-          $lookup: {
-            from: "users",
-            localField: "user",
-            foreignField: "_id",
-            as: "userInfo"
-          }
+    {
+      $lookup: {
+        from: "reviews",
+        let: { productId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: { $eq: ["$product", "$$productId"] },
+              status: { $ne: "rejected" },
+            },
+          },
+          { $sort: { createdAt: -1 } },
+          { $skip: skip },
+          { $limit: limit },
+          {
+            $lookup: {
+              from: "users",
+              localField: "user",
+              foreignField: "_id",
+              as: "userInfo",
+            },
+          },
+          { $unwind: "$userInfo" },
+          {
+            $project: {
+              rating: 1,
+              comment: 1,
+              title: 1,
+              createdAt: 1,
+              "user.name": "$userInfo.name",
+              "user.email": "$userInfo.email",
+            },
+          },
+        ],
+        as: "reviews",
+      },
+    },
+
+    {
+      $lookup: {
+        from: "reviews",
+        let: { productId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: { $eq: ["$product", "$$productId"] },
+              status: { $ne: "rejected" },
+            },
+          },
+          { $project: { rating: 1 } },
+        ],
+        as: "allReviews",
+      },
+    },
+
+    {
+      $addFields: {
+        averageRating: { $avg: "$allReviews.rating" },
+        reviewCount: { $size: "$allReviews" },
+        positiveReviewCount: {
+          $size: {
+            $filter: {
+              input: "$allReviews",
+              cond: { $gte: ["$$this.rating", 4] },
+            },
+          },
         },
-        { $unwind: "$userInfo" },
-        {
-          $project: {
-            rating: 1,
-            comment: 1,
-            title: 1,
-            createdAt: 1,
-            "user.name": "$userInfo.name",
-            "user.email": "$userInfo.email"
-          }
-        }
-      ],
-      as: "reviews"
-    }
-  },
+        negativeReviewCount: {
+          $size: {
+            $filter: {
+              input: "$allReviews",
+              cond: { $lte: ["$$this.rating", 2] },
+            },
+          },
+        },
+        fiveStarCount: {
+          $size: {
+            $filter: {
+              input: "$allReviews",
+              cond: { $eq: ["$$this.rating", 5] },
+            },
+          },
+        },
+      },
+    },
 
-  // 🔹 All reviews for statistics
-  {
-    $lookup: {
-      from: "reviews",
-      let: { productId: "$_id" },
-      pipeline: [
-        { $match: { $expr: { $eq: ["$product", "$$productId"] }, status: { $ne: "rejected" } } },
-        { $project: { rating: 1 } }
-      ],
-      as: "allReviews"
-    }
-  },
+    { $project: { allReviews: 0 } },
+  ]);
 
-  // 🔹 Add statistics
-  {
-    $addFields: {
-      averageRating: { $avg: "$allReviews.rating" },
-      reviewCount: { $size: "$allReviews" },
-      positiveReviewCount: { $size: { $filter: { input: "$allReviews", cond: { $gte: ["$$this.rating", 4] } } } },
-      negativeReviewCount: { $size: { $filter: { input: "$allReviews", cond: { $lte: ["$$this.rating", 2] } } } },
-      fiveStarCount: { $size: { $filter: { input: "$allReviews", cond: { $eq: ["$$this.rating", 5] } } } }
-    }
-  },
-
-  // Remove allReviews to reduce payload
-  { $project: { allReviews: 0 } }
-]);
-
-
-  return {status:true,data:result[0],message:"product with reviews fetch successfully"}
+  return {
+    status: true,
+    data: result[0],
+    message: "product with reviews fetch successfully",
+  };
 };
 
-// update product using id
 exports.updateProduct = async (id, data) => {
-  return await Product.findByIdAndUpdate({ _id: id, is_deleted: false }, data, { new: true });
+  return await Product.findByIdAndUpdate({ _id: id, is_deleted: false }, data, {
+    new: true,
+  });
 };
 
-// delete product using id
 exports.deleteProduct = async (id) => {
   return await Product.findByIdAndDelete(id);
 };
-
-
 
 exports.userGetAllTrendingProducts = async (query) => {
   const {
@@ -184,19 +311,19 @@ exports.userGetAllTrendingProducts = async (query) => {
     trending,
     isFeatured,
   } = query;
-  
-  const filter = { is_deleted: false,isActive:true };
+
+  const filter = { is_deleted: false, isActive: true };
   if (search) {
     filter.$or = [
-      { name:       { $regex: search, $options: "i" } },
-      { description:{ $regex: search, $options: "i" } },
-      { tags:       { $regex: search, $options: "i" } },
-      { slug:       { $regex: search, $options: "i" } },
+      { name: { $regex: search, $options: "i" } },
+      { description: { $regex: search, $options: "i" } },
+      { tags: { $regex: search, $options: "i" } },
+      { slug: { $regex: search, $options: "i" } },
     ];
   }
 
   if (category) {
-    const categoryDoc = await categoryService.getCategoriesForSearchName(query)
+    const categoryDoc = await categoryService.getCategoriesForSearchName(query);
     if (categoryDoc) {
       filter.category = categoryDoc._id;
     } else {
@@ -204,7 +331,7 @@ exports.userGetAllTrendingProducts = async (query) => {
       return [];
     }
   }
-   if (isFeatured !== undefined) filter.isFeatured = isFeatured;
+  if (isFeatured !== undefined) filter.isFeatured = isFeatured;
   if (minPrice || maxPrice) {
     filter.price = {};
     if (minPrice) filter.price.$gte = Number(minPrice);
@@ -225,13 +352,13 @@ exports.userGetAllTrendingProducts = async (query) => {
       .sort(sortQuery)
       .skip(skip)
       .limit(Number(limit))
-      .populate("images","public_id secure_url _id")
+      .populate("images", "public_id secure_url _id")
       .populate("category"),
     Product.countDocuments(filter),
   ]);
 
-  return {products,total}
-}
+  return { products, total };
+};
 
 exports.softDeleteProduct = async (id) => {
   return await Product.findByIdAndUpdate(id, { is_deleted: true });

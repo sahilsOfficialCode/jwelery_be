@@ -22,13 +22,14 @@ exports.addToCart = async (userId, productId, quantity) => {
     cart.items.push({
       product: productId,
       quantity,
-      price: product.price - (product.price * product.discountPrice / 100) || product.price,
+      price:
+        product.price - (product.price * product.discountPrice) / 100 ||
+        product.price,
     });
   }
 
-  cart.totalPrice = cart.items.reduce(
-    (acc, item) => acc + item.quantity * item.price,
-    0
+  cart.totalPrice = Math.round(
+    cart.items.reduce((acc, item) => acc + item.quantity * item.price, 0)
   );
   const cartAdd = await cart.save();
   return { status:true, data:cartAdd, message:"Item added to cart successfully"}
