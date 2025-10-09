@@ -46,7 +46,7 @@ exports.verifyPayment = async (req, res, next) => {
 exports.getUserOrders = async (req, res, next) => {
   try {
     const orders = await orderService.getUserOrders(req.user._id);
-    res.json({ status: true, orders });
+    res.status(200).send({ status: true, orders });
   } catch (err) {
     next(err);
   }

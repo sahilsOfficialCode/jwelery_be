@@ -72,7 +72,17 @@ exports.verifyPayment = async (
 
 // get user orders
 exports.getUserOrders = async (userId) => {
-  return await Order.find({ user: userId }).populate("items.product");
+  const data =  await Order.find({ user: userId })
+  .populate({
+    path: "items.product",
+    model: "Product",
+    populate: {
+      path: "images",            // populate images inside product
+      model: "images",           // note: model name must match your Image model
+    },
+  });
+  console.log("<><>data",data)
+  return data
 };
 
 // cancel order before shipped
