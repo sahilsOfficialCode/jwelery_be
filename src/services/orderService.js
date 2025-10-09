@@ -199,3 +199,17 @@ exports.updateOrderStatus = async (orderId, newStatus) => {
 
   return order;
 };
+
+// cancel order before shipped
+exports.changeOrderStatus = async (userId, orderId,status) => {
+  const order = await Order.findOne({ _id: orderId, user: userId });
+  if (!order) throw new ErrorHandler("Order not found", 404);
+
+  if (["shipped", "delivered"].includes(order.orderStatus)) {
+    throw new ErrorHandler("Cannot change shipped/delivered order", 400);
+  }
+
+  order.orderStatus = status;
+  await order.save();
+  return order;
+};

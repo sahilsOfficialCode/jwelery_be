@@ -7,7 +7,8 @@ router.use(userAuthentication);
 router.post("/create", orderController.createOrder);
 router.post("/verify-payment", orderController.verifyPayment);
 router.get("/", orderController.getUserOrders);
-router.get("/list",authorizeRoles("admin"), orderController.getAllUsersOrders);
+router.get("/list",authorizeRoles("admin"), orderController.getUserOrders);
+router.put("/:orderId",authorizeRoles("admin"),orderController.changeOrderStatus);
 router.put("/cancel/:orderId", orderController.cancelOrder);
 router.patch(
   "/:orderId/status",
