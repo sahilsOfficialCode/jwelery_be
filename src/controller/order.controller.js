@@ -79,7 +79,6 @@ exports.cancelOrder = async (req, res, next) => {
 // admin change order status
 exports.changeOrderStatus = catchAsyncErrors(async (req, res,next) => {
   const { orderId } = req.params
-  console.log("<><>req.body",req.body)
   if(!req.body.status) return next(new ErrorHandler("status required",404))
   const order = await orderService.changeOrderStatus(orderId, req.body.status);
   res.json({ status: true, order });
@@ -90,4 +89,20 @@ exports.adminCreateOrder = catchAsyncErrors( async(req,res,next)=>{
   const orderData = await orderService.adminCreateOrderService(req.user._id,items,shippingAddress)
   res.json({ status: true, orderData });
 })
+
+exports.adminUpdateOrder = catchAsyncErrors(async (req, res, next) => {
+  const { orderId } = req.params;
+  const { items, shippingAddress, paymentStatus, paymentMethod } = req.body;
+
+  const updateData = { items, shippingAddress, paymentStatus, paymentMethod };
+
+  const orderData = await orderService.adminUpdateOrderService(orderId, updateData);
+
+  res.json({
+    status: true,
+    message: "Order updated successfully",
+    orderData,
+  });
+});
+
 
