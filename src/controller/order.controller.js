@@ -53,6 +53,15 @@ exports.getUserOrders = async (req, res, next) => {
   }
 };
 
+exports.getAllUserOrder = async(req, res, next)=>{
+   try {
+    const orders = await orderService.getAllUserOrders(req.query)
+    res.status(200).send({ status: true, orders });
+  } catch (err) {
+    next(err);
+  }
+}
+
 // cancel order
 exports.cancelOrder = async (req, res, next) => {
   try {
@@ -68,9 +77,17 @@ exports.cancelOrder = async (req, res, next) => {
 
 
 // admin change order status
-exports.changeOrderStatus = catchAsyncErrors(async (req, res) => {
+exports.changeOrderStatus = catchAsyncErrors(async (req, res,next) => {
   const { orderId } = req.params
-  const order = await orderService.changeOrderStatus(req.user._id, orderId, req.body.status);
+  console.log("<><>req.body",req.body)
+  if(!req.body.status) return next(new ErrorHandler("status required",404))
+  const order = await orderService.changeOrderStatus(orderId, req.body.status);
   res.json({ status: true, order });
+})
+
+exports.adminCreateOrder = catchAsyncErrors( async(req,res,next)=>{
+  const {items, shippingAddress} = req.body
+  const orderData = await orderService.adminCreateOrderService(req.user._id,items,shippingAddress)
+  res.json({ status: true, orderData });
 })
 
