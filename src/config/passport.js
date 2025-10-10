@@ -5,12 +5,11 @@ const User = require("../model/user.model");
 
 dotenv.config();
 
-passport.serializeUser((user, done) => {
-    done(null, user);
-});
+passport.serializeUser((user, done) => done(null, user.id));
 
-passport.deserializeUser((user, done) => {
-    done(null, user);
+passport.deserializeUser(async (id, done) => {
+  const user = await User.findById(id);
+  done(null, user);
 });
 
 passport.use(
@@ -18,9 +17,9 @@ passport.use(
         {
             clientID: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            callbackURL: "/auth/google/callback",
+            callbackURL: process.env.GOOGLE_CALLBACK_URL,
         },
-        async (req,accessToken, refreshToken, profile, done) => {
+        async (accessToken, refreshToken, profile, done) => {
             try {
                 let user = await User.findOne({ email: profile.emails[0].value });
                 if (!user) {
@@ -33,7 +32,6 @@ passport.use(
                         isVerified: profile.emails[0].verified,
                     });
                 }
-                req.user = user
                 return done(null, user);
             } catch (error) {
                  return done(error, null);

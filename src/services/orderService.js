@@ -1,3 +1,4 @@
+const OrderModel = require("../model/Order.model");
 const Order = require("../model/Order.model");
 const ErrorHandler = require("../utils/errorHandler");
 const Razorpay = require("razorpay");
@@ -72,7 +73,15 @@ exports.verifyPayment = async (
 
 // get user orders
 exports.getUserOrders = async (userId) => {
-  return await Order.find({ user: userId }).populate("items.product");
+  return await Order.find({ user: userId })
+  .populate({
+    path: "items.product",
+    model: "Product",
+    populate: {
+      path: "images",            // populate images inside product
+      model: "images",           // note: model name must match your Image model
+    },
+  });
 };
 
 // get user orders
@@ -189,3 +198,42 @@ exports.updateOrderStatus = async (orderId, newStatus) => {
 
   return order;
 };
+
+// cancel order before shipped
+exports.changeOrderStatus = async (orderId,status) => {
+  const order = await OrderModel.findOne({ _id: orderId});
+  if (!order) throw new ErrorHandler("Order not found", 404);
+  if (["shipped", "delivered"].includes(order.orderStatus)) {
+    throw new ErrorHandler("Cannot change shipped/delivered order", 400);
+  }
+  order.orderStatus = status;
+  await order.save();
+  return order;
+};
+
+// Admin creates order without payment integration
+exports.adminCreateOrderService = async (userId, items, shippingAddress) => {
+  try {
+    const totalAmount = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
+
+    // Create order directly without Razorpay
+    const order = await Order.create({
+      user: userId,
+      items,
+      shippingAddress,
+      totalAmount,
+      payment: {
+        status: "paid", // or "pending" depending on your logic
+        method: "admin",
+      },
+      createdBy: "admin", // optional: track who created the order
+    });
+
+    return { order };
+  } catch (error) {
+    console.error("Error creating admin order:", error);
+    throw new Error("Could not create order");
+  }
+};
+
+
