@@ -12,8 +12,12 @@ const bcrypt = require('bcrypt')
 exports.googleAuth = passport.authenticate("google", { scope: ["profile", "email"] });
 
 exports.googleCallback = (req, res) => {
-    const token = jwt.sign({ _id: req.user._id, email: req.user.email, role: req.user.role, provider: req.user.provider }, process.env.JWT_SECRET, { expiresIn: '30d' });
-    sendToken(token, 200, res);
+   try {
+     const token = jwt.sign({ _id: req.user._id, email: req.user.email, role: req.user.role, provider: req.user.provider }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    res.redirect(`${process.env.FRONTEND_URL}/auth-success?token=${token}`);
+   } catch (error) {
+    res.redirect(`${process.env.FRONTEND_URL}/login?error=google_failed`);
+   }
 };
 
 exports.userLoginWithCode = catchAsyncErrors(async (req, res, next) => {

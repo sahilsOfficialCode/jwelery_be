@@ -1,3 +1,4 @@
+const OrderModel = require("../model/Order.model");
 const Order = require("../model/Order.model");
 const ErrorHandler = require("../utils/errorHandler");
 const Razorpay = require("razorpay");
@@ -72,17 +73,15 @@ exports.verifyPayment = async (
 
 // get user orders
 exports.getUserOrders = async (userId) => {
-  const data =  await Order.find({ user: userId })
-  .populate({
-    path: "items.product",
-    model: "Product",
-    populate: {
-      path: "images",            // populate images inside product
-      model: "images",           // note: model name must match your Image model
-    },
-  });
-  console.log("<><>data",data)
-  return data
+  return await Order.find({ user: userId })
+    .populate({
+      path: "items.product",
+      model: "Product",
+      populate: {
+        path: "images",            // populate images inside product
+        model: "images",           // note: model name must match your Image model
+      },
+    });
 };
 
 // get user orders
@@ -201,15 +200,91 @@ exports.updateOrderStatus = async (orderId, newStatus) => {
 };
 
 // cancel order before shipped
-exports.changeOrderStatus = async (userId, orderId,status) => {
-  const order = await Order.findOne({ _id: orderId, user: userId });
+exports.changeOrderStatus = async (orderId, status) => {
+  const order = await OrderModel.findOne({ _id: orderId });
   if (!order) throw new ErrorHandler("Order not found", 404);
-
   if (["shipped", "delivered"].includes(order.orderStatus)) {
     throw new ErrorHandler("Cannot change shipped/delivered order", 400);
   }
-
   order.orderStatus = status;
   await order.save();
   return order;
 };
+
+// Admin creates order without payment integration
+exports.adminCreateOrderService = async (userId, items, shippingAddress) => {
+  try {
+    for (const item of items) {
+      const product = await Product.findById(item.productId);
+
+      if (!product) {
+        throw new Error(`Product not found: ${item.productId}`);
+      }
+
+      // Optional: Check available stock
+      if (product.stock < item.quantity) {
+        throw new Error(
+          `Insufficient stock for product: ${product.name} (Available: ${product.stock})`
+        );
+      }
+    }
+    const totalAmount = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
+
+    // Create order directly without Razorpay
+    const order = await Order.create({
+      user: userId,
+      items,
+      shippingAddress,
+      totalAmount,
+      payment: {
+        status: "paid",
+        method: "admin",
+      },
+      createdBy: "admin",
+    });
+
+    return { order };
+  } catch (error) {
+    console.error("Error creating admin order:", error);
+    throw new Error("Could not create order");
+  }
+};
+
+exports.adminUpdateOrderService = async (orderId, updateData) => {
+  try {
+    // Destructure fields that can be updated
+    const { items, shippingAddress, paymentStatus, paymentMethod } = updateData;
+
+    // Calculate total amount if items are updated
+    let totalAmount;
+    if (items && Array.isArray(items)) {
+      totalAmount = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
+    }
+
+    // Prepare update object
+    const updateFields = {
+      ...(items && { items }),
+      ...(shippingAddress && { shippingAddress }),
+      ...(totalAmount && { totalAmount }),
+      ...(paymentStatus && { "payment.status": paymentStatus }),
+      ...(paymentMethod && { "payment.method": paymentMethod }),
+      updatedAt: new Date(),
+    };
+
+    // Update order in DB
+    const updatedOrder = await Order.findByIdAndUpdate(orderId, updateFields, {
+      new: true,
+    });
+
+    if (!updatedOrder) {
+      throw new Error("Order not found");
+    }
+
+    return { order: updatedOrder };
+  } catch (error) {
+    console.error("Error updating admin order:", error);
+    throw new Error("Could not update order");
+  }
+};
+
+
