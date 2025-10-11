@@ -7,14 +7,26 @@ router.use(userAuthentication);
 router.post("/create", orderController.createOrder);
 router.post("/verify-payment", orderController.verifyPayment);
 router.get("/", orderController.getUserOrders);
-router.get("/list",authorizeRoles("admin"), orderController.getAllUserOrder);
-router.post("/admin",authorizeRoles("admin"),orderController.adminCreateOrder);
-router.put("/:orderId",authorizeRoles("admin"),orderController.changeOrderStatus);
+router.get("/list", authorizeRoles("admin"), orderController.getAllUserOrder);
+router.post(
+  "/admin",
+  authorizeRoles("admin"),
+  orderController.adminCreateOrder
+);
+router.put(
+  "/:orderId",
+  authorizeRoles("admin"),
+  orderController.changeOrderStatus
+);
 router.put("/cancel/:orderId", orderController.cancelOrder);
 router.put(
   "/status/:orderId",
   authorizeRoles("admin"),
   orderController.changeOrderStatus
 );
-router.put("/admin",authorizeRoles("admin"),orderController.adminUpdateOrder)
+router.put(
+  "/admin/:orderId",
+  authorizeRoles("admin"),
+  orderController.adminUpdateOrder
+);
 module.exports = router;

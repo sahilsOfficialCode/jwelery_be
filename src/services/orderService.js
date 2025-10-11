@@ -1,5 +1,6 @@
 const OrderModel = require("../model/Order.model");
 const Order = require("../model/Order.model");
+const Product = require("../model/product.model");
 const ErrorHandler = require("../utils/errorHandler");
 const Razorpay = require("razorpay");
 
@@ -73,31 +74,30 @@ exports.verifyPayment = async (
 
 // get user orders
 exports.getUserOrders = async (userId) => {
-  return await Order.find({ user: userId })
-    .populate({
-      path: "items.product",
-      model: "Product",
-      populate: {
-        path: "images",            // populate images inside product
-        model: "images",           // note: model name must match your Image model
-      },
-    });
+  return await Order.find({ user: userId }).populate({
+    path: "items.product",
+    model: "Product",
+    populate: {
+      path: "images", // populate images inside product
+      model: "images", // note: model name must match your Image model
+    },
+  });
 };
 
 // get user orders
 exports.getAllUserOrders = async (query) => {
   try {
     const {
-      search,                // search by name, phone, notes
-      status,                // filter by orderStatus
-      payment_status,        // filter by payment.status
-      start_date,            // filter by createdAt >= start_date
-      end_date,              // filter by createdAt <= end_date
-      userId,                // optional: filter by user
+      search, // search by name, phone, notes
+      status, // filter by orderStatus
+      payment_status, // filter by payment.status
+      start_date, // filter by createdAt >= start_date
+      end_date, // filter by createdAt <= end_date
+      userId, // optional: filter by user
       page = 1,
       limit = 10,
       sort_by = "createdAt",
-      order = "desc"
+      order = "desc",
     } = query;
 
     const isFetchAll = limit === "all";
@@ -122,7 +122,7 @@ exports.getAllUserOrders = async (query) => {
       filters.$or = [
         { "shippingAddress.name": { $regex: search, $options: "i" } },
         { "shippingAddress.phone": { $regex: search, $options: "i" } },
-        { notes: { $regex: search, $options: "i" } }
+        { notes: { $regex: search, $options: "i" } },
       ];
     }
 
@@ -130,7 +130,7 @@ exports.getAllUserOrders = async (query) => {
     let queryBuilder = Order.find(filters)
       .populate({
         path: "items.product",
-        populate: { path: "images", model: "images" }
+        populate: { path: "images", model: "images" },
       })
       .populate("user", "name email")
       .sort({ [sort_by]: order === "asc" ? 1 : -1 })
@@ -151,14 +151,14 @@ exports.getAllUserOrders = async (query) => {
         result,
         total,
         page: isFetchAll ? 1 : pageNum,
-        limit: isFetchAll ? total : limitNum
+        limit: isFetchAll ? total : limitNum,
       },
-      message: "Orders fetched successfully"
+      message: "Orders fetched successfully",
     };
   } catch (error) {
     return {
       status: false,
-      message: `Something went wrong. (${error.message})`
+      message: `Something went wrong. (${error.message})`,
     };
   }
 };
@@ -215,10 +215,9 @@ exports.changeOrderStatus = async (orderId, status) => {
 exports.adminCreateOrderService = async (userId, items, shippingAddress) => {
   try {
     for (const item of items) {
-      const product = await Product.findById(item.productId);
-
+      const product = await Product.findById(item.product);
       if (!product) {
-        throw new Error(`Product not found: ${item.productId}`);
+        throw new Error(`Product not found: ${item.product}`);
       }
 
       // Optional: Check available stock
@@ -286,5 +285,3 @@ exports.adminUpdateOrderService = async (orderId, updateData) => {
     throw new Error("Could not update order");
   }
 };
-
-
