@@ -285,3 +285,15 @@ exports.adminUpdateOrderService = async (orderId, updateData) => {
     throw new Error("Could not update order");
   }
 };
+
+exports.getSingleOrderWithIdService = async(id)=>{
+  try {
+    const orderData = await Order.findById(id)
+    if(!orderData){
+      return { status:false, message:"Could not find this order"}
+    }
+    return { status:true, data:orderData,message:"fetch order data"}
+  } catch (error) {
+    return { status:false, message:`Something went wrong (${error.message})`}
+  }
+}

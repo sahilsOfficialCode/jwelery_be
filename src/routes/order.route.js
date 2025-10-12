@@ -29,4 +29,6 @@ router.put(
   authorizeRoles("admin"),
   orderController.adminUpdateOrder
 );
+
+router.get("/:orderId",orderController.getSingleOrderWithId)
 module.exports = router;

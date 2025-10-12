@@ -115,3 +115,14 @@ exports.adminUpdateOrder = catchAsyncErrors(async (req, res, next) => {
     orderData,
   });
 });
+
+exports.getSingleOrderWithId = catchAsyncErrors(async (req, res, next) => {
+  const { orderId } = req.params;
+
+  const orderData = await orderService.getSingleOrderWithIdService(
+    orderId
+  );
+
+  if(!orderData.status) return next(new ErrorHandler(orderData.message,400))
+return res.status(200).send({status:true,data:orderData.data,message:orderData.message});
+});
