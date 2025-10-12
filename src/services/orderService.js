@@ -217,14 +217,12 @@ exports.adminCreateOrderService = async (userId, items, shippingAddress) => {
     for (const item of items) {
       const product = await Product.findById(item.product);
       if (!product) {
-        throw new Error(`Product not found: ${item.product}`);
+        return { status: false, message: `Product not found: ${item.product}` }
       }
 
       // Optional: Check available stock
       if (product.stock < item.quantity) {
-        throw new Error(
-          `Insufficient stock for product: ${product.name} (Available: ${product.stock})`
-        );
+        return { status: false, message: `Insufficient stock for product: ${product.name} (Available: ${product.stock})` }
       }
     }
     const totalAmount = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
@@ -242,10 +240,18 @@ exports.adminCreateOrderService = async (userId, items, shippingAddress) => {
       createdBy: "admin",
     });
 
-    return { order };
+    for (const item of items) {
+      await Product.findByIdAndUpdate(
+        item.product,
+        { $inc: { stock: -item.quantity } },
+        { new: true }
+      );
+    }
+
+    return { status: true, data: order, message: "order created" };
   } catch (error) {
     console.error("Error creating admin order:", error);
-    throw new Error("Could not create order");
+    return { status: false, message: `something went wrong (${error.message})` }
   }
 };
 
@@ -286,14 +292,31 @@ exports.adminUpdateOrderService = async (orderId, updateData) => {
   }
 };
 
-exports.getSingleOrderWithIdService = async(id)=>{
+exports.getSingleOrderWithIdService = async (id) => {
   try {
-    const orderData = await Order.findById(id)
-    if(!orderData){
-      return { status:false, message:"Could not find this order"}
+    const orderData = await Order.findById(id).populate({
+      path: "items.product",
+      populate: {
+        path: "category", model: "Category"
+      }
+    }).lean()
+    if (!orderData) {
+      return { status: false, message: "Could not find this order" }
     }
-    return { status:true, data:orderData,message:"fetch order data"}
+    const formattedItems = orderData.items.map((item) => ({
+      _id: item._id,
+      product: item.product?._id,
+      quantity: item.quantity,
+      price: item.price,
+      name: item.product?.name || null,
+      category: item.product?.category?.name || null,
+    }));
+    const formattedOrder = {
+      ...orderData,
+      items: formattedItems,
+    };
+    return { status: true, data: formattedOrder, message: "fetch order data" }
   } catch (error) {
-    return { status:false, message:`Something went wrong (${error.message})`}
+    return { status: false, message: `Something went wrong (${error.message})` }
   }
 }

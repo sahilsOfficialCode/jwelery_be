@@ -95,7 +95,8 @@ exports.adminCreateOrder = catchAsyncErrors(async (req, res, next) => {
     items,
     shippingAddress
   );
-  res.json({ status: true, orderData });
+  if(!orderData.status) return next(new ErrorHandler(orderData.message,400))
+  res.status(200).json({ status: true, data:orderData.data,message:orderData.message });
 });
 
 exports.adminUpdateOrder = catchAsyncErrors(async (req, res, next) => {
