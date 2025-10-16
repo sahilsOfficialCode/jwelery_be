@@ -7,8 +7,10 @@ const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 exports.createOrder = async (req, res, next) => {
   try {
     const { items, shippingAddress } = req.body;
-    if (items.length === 0) return next(new ErrorHandler("items field missing"))
-    if (!shippingAddress) return next(new ErrorHandler("shippingAddress field missing"))
+    if (items.length === 0)
+      return next(new ErrorHandler("items field missing"));
+    if (!shippingAddress)
+      return next(new ErrorHandler("shippingAddress field missing"));
     const { order, razorpayOrder } = await orderService.createOrder(
       req.user._id,
       items,
@@ -25,9 +27,12 @@ exports.verifyPayment = async (req, res, next) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
       req.body;
-    if (!razorpay_order_id) return next(new ErrorHandler("shippingAddress field missing"));
-    if (!razorpay_payment_id) return next(new ErrorHandler("razorpay_payment_id field missing"));
-    if (!razorpay_signature) return next(new ErrorHandler("razorpay_signature field missing"));
+    if (!razorpay_order_id)
+      return next(new ErrorHandler("shippingAddress field missing"));
+    if (!razorpay_payment_id)
+      return next(new ErrorHandler("razorpay_payment_id field missing"));
+    if (!razorpay_signature)
+      return next(new ErrorHandler("razorpay_signature field missing"));
 
     const { status, order } = await orderService.verifyPayment(
       razorpay_order_id,
@@ -35,7 +40,7 @@ exports.verifyPayment = async (req, res, next) => {
       razorpay_signature
     );
     if (status) {
-      await cartService.deleteAllCart(req.user._id)
+      await cartService.deleteAllCart(req.user._id);
     }
     res.json({ status: true, order });
   } catch (err) {
@@ -53,14 +58,14 @@ exports.getUserOrders = async (req, res, next) => {
   }
 };
 
-exports.getAllUserOrder = async(req, res, next)=>{
-   try {
-    const orders = await orderService.getAllUserOrders(req.query)
+exports.getAllUserOrder = async (req, res, next) => {
+  try {
+    const orders = await orderService.getAllUserOrders(req.query);
     res.status(200).send({ status: true, orders });
   } catch (err) {
     next(err);
   }
-}
+};
 
 // cancel order
 exports.cancelOrder = async (req, res, next) => {
@@ -75,20 +80,24 @@ exports.cancelOrder = async (req, res, next) => {
   }
 };
 
-
 // admin change order status
-exports.changeOrderStatus = catchAsyncErrors(async (req, res,next) => {
-  const { orderId } = req.params
-  if(!req.body.status) return next(new ErrorHandler("status required",404))
+exports.changeOrderStatus = catchAsyncErrors(async (req, res, next) => {
+  const { orderId } = req.params;
+  if (!req.body.status) return next(new ErrorHandler("status required", 404));
   const order = await orderService.changeOrderStatus(orderId, req.body.status);
   res.json({ status: true, order });
-})
+});
 
-exports.adminCreateOrder = catchAsyncErrors( async(req,res,next)=>{
-  const {items, shippingAddress} = req.body
-  const orderData = await orderService.adminCreateOrderService(req.user._id,items,shippingAddress)
-  res.json({ status: true, orderData });
-})
+exports.adminCreateOrder = catchAsyncErrors(async (req, res, next) => {
+  const { items, shippingAddress } = req.body;
+  const orderData = await orderService.adminCreateOrderService(
+    req.user._id,
+    items,
+    shippingAddress
+  );
+  if(!orderData.status) return next(new ErrorHandler(orderData.message,400))
+  res.status(200).json({ status: true, data:orderData.data,message:orderData.message });
+});
 
 exports.adminUpdateOrder = catchAsyncErrors(async (req, res, next) => {
   const { orderId } = req.params;
@@ -96,7 +105,10 @@ exports.adminUpdateOrder = catchAsyncErrors(async (req, res, next) => {
 
   const updateData = { items, shippingAddress, paymentStatus, paymentMethod };
 
-  const orderData = await orderService.adminUpdateOrderService(orderId, updateData);
+  const orderData = await orderService.adminUpdateOrderService(
+    orderId,
+    updateData
+  );
 
   res.json({
     status: true,
@@ -105,4 +117,13 @@ exports.adminUpdateOrder = catchAsyncErrors(async (req, res, next) => {
   });
 });
 
+exports.getSingleOrderWithId = catchAsyncErrors(async (req, res, next) => {
+  const { orderId } = req.params;
 
+  const orderData = await orderService.getSingleOrderWithIdService(
+    orderId
+  );
+
+  if(!orderData.status) return next(new ErrorHandler(orderData.message,400))
+return res.status(200).send({status:true,data:orderData.data,message:orderData.message});
+});
