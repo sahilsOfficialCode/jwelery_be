@@ -77,7 +77,7 @@ exports.addToCart = async (userId, productId, quantity) => {
   // recalculate total
   cart.totalPrice = Math.round(
     // cart.items.reduce((acc, item) => acc + item.quantity * item.price, 0)
-    cart.items.reduce((acc, item) => acc + item.quantity * item.price, 0 );
+    cart.items.reduce((acc, item) => acc + item.quantity * item.price, 0 )
   )
   const cartAdd = await cart.save();
   return {
@@ -121,9 +121,8 @@ exports.updateCartItem = async (userId, productId, quantity) => {
   //   0
   // );
   cart.totalPrice = cart.items.reduce(
-    (acc, i) => acc + i.quantity * i.discountPrice,
-    0
-  );
+    (acc, i) => acc + i.quantity * i.discountPrice,0
+);
 
   return await cart.save();
 };
