@@ -58,18 +58,27 @@ exports.addToCart = async (userId, productId, quantity) => {
   if (itemIndex > -1) {
     cart.items[itemIndex].quantity += quantity;
   } else {
+    // cart.items.push({
+    //   product: productId,
+    //   quantity,
+    //   price:
+    //     product.price - (product.price * product.discountPrice) / 100 ||
+    //     product.price,
+    // });
+
     cart.items.push({
       product: productId,
       quantity,
-      price: finalPrice > 0 ? finalPrice : 0,
+      price:
+        product.discountPrice || product.price,
     });
   }
 
   // recalculate total
   cart.totalPrice = Math.round(
-    cart.items.reduce((acc, item) => acc + item.quantity * item.price, 0)
-  );
-
+    // cart.items.reduce((acc, item) => acc + item.quantity * item.price, 0)
+    cart.items.reduce((acc, item) => acc + item.quantity * item.price, 0 )
+  )
   const cartAdd = await cart.save();
   return {
     status: true,
@@ -107,10 +116,13 @@ exports.updateCartItem = async (userId, productId, quantity) => {
   if (!item) throw new ErrorHandler("Product not in cart", 404);
 
   item.quantity = quantity;
+  // cart.totalPrice = cart.items.reduce(
+  //   (acc, i) => acc + i.quantity * i.price,
+  //   0
+  // );
   cart.totalPrice = cart.items.reduce(
-    (acc, i) => acc + i.quantity * i.price,
-    0
-  );
+    (acc, i) => acc + i.quantity * i.discountPrice,0
+);
 
   return await cart.save();
 };
@@ -120,8 +132,12 @@ exports.removeFromCart = async (userId, productId) => {
   if (!cart) throw new ErrorHandler("Cart not found", 404);
 
   cart.items = cart.items.filter((i) => i.product.toString() !== productId);
-  cart.totalPrice = cart.items.reduce(
-    (acc, i) => acc + i.quantity * i.price,
+  // cart.totalPrice = cart.items.reduce(
+  //   (acc, i) => acc + i.quantity * i.price,
+  //   0
+  // );
+   cart.totalPrice = cart.items.reduce(
+    (acc, i) => acc + i.quantity * i.discountPrice,
     0
   );
 
