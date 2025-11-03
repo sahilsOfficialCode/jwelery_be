@@ -6,6 +6,8 @@ const { cloudinary } = require("../utils/cloudinary");
 const Image = require("../model/image.model");
 const Product = require("../model/product.model");
 
+const mongoose = require("mongoose");
+
 // create product
 exports.createProduct = async (req, res, next) => {
   try {
