@@ -7,3 +7,7 @@ exports.createImage = async (data) => {
 exports.deleteImage = async (publicId) => {
     return await Image.deleteOne({ _id: publicId });
 }
+
+exports.findImageById = async(id)=>{
+    return await Image.findById(id)
+}

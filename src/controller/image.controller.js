@@ -72,25 +72,27 @@ exports.uploadImages = catchAsyncErrors(async (req, res, next) => {
 });
 
 exports.deleteImage = catchAsyncErrors(async (req, res, next) => {
+  console.log("delete image working")
     const { image_id } = req.query
     const { id } = req.params
     if(!id || !image_id){
         return next(new ErrorHandler("Image id is required", 400));
     }
-    const productData = await productService.getProductById(id);
+    const productData = await productService.getProductToDeleteById(id);
     if(!productData){
         return next(new ErrorHandler("Product not found", 404));
     }
-
     const imgDelete = productData.images.find(
         (img) => img._id.toString() === image_id
       );
+
+      const imageData = await imageService.findImageById(imgDelete)
 
       if (!imgDelete) {
         return next(new ErrorHandler("Image not found in this product", 404));
       }
 
-      await cloudinary.uploader.destroy(imgDelete.public_id);
+      await cloudinary.uploader.destroy(imageData.public_id);
 
       await imageService.deleteImage(imgDelete._id);
 
