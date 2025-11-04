@@ -88,7 +88,6 @@ exports.getAllProducts = catchAsyncErrors(async (req, res, next) => {
 // get product based on :id
 exports.getProductById = catchAsyncErrors(async (req, res, next) => {
    const {page=1,limit=2} = req.query
-    const {status,data,message} = await productService.getProductById(req.params.id,page,limit)
   try {
     const {page=1,limit=2} = req.query
     const {status,data,message} = await productService.getProductById(req.params.id,page,limit)
@@ -122,7 +121,7 @@ exports.updateProduct = catchAsyncErrors(async (req, res, next) => {
 // soft delete product
 exports.deleteProduct = catchAsyncErrors(async (req, res, next) => {
   try {
-    const product = await productService.getProductById(req.params.id);
+    const product = await productService.getProductToDeleteById(req.params.id);
     if (!product) {
       return next(new ErrorHandler("No product found", 404));
     }
@@ -138,7 +137,7 @@ exports.deleteProduct = catchAsyncErrors(async (req, res, next) => {
 // delete product using id
 exports.deleteProductHard = catchAsyncErrors(async (req, res, next) => {
   try {
-    const product = await productService.getProductById(req.params.id);
+    const product = await productService.getProductToDeleteById(req.params.id);
     if (!product) {
       return next(new ErrorHandler("No product found", 404));
     }
@@ -172,7 +171,6 @@ exports.deleteProductHard = catchAsyncErrors(async (req, res, next) => {
 });
 
 // user user list all product
-
 exports.userGetAllTrendingProducts = catchAsyncErrors(
   async (req, res, next) => {
     const productData = await productService.userGetAllTrendingProducts(

@@ -287,9 +287,7 @@ exports.getProductById = async (id, page, limit) => {
 };
 
 exports.getProductToDeleteById = async (id) => {
-
   const result = await Product.findById(id)
-
   return result
 };
 
