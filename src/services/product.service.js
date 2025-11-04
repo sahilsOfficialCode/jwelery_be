@@ -157,8 +157,6 @@ exports.getProductById = async (id, page, limit) => {
   limit = parseInt(limit);
   const skip = (page - 1) * limit;
 
-  console.log("<><>skip", typeof skip, skip);
-
   const result = await Product.aggregate([
     { $match: { _id: new mongoose.Types.ObjectId(id), isActive: true } },
 
@@ -286,6 +284,13 @@ exports.getProductById = async (id, page, limit) => {
     data: result[0],
     message: "product with reviews fetch successfully",
   };
+};
+
+exports.getProductToDeleteById = async (id) => {
+
+  const result = await Product.findById(id)
+
+  return result
 };
 
 exports.updateProduct = async (id, data) => {

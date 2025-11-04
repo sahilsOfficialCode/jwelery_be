@@ -4,9 +4,6 @@ const ErrorHandler = require("../utils/errorHandler");
 const productService = require("../services/product.service");
 const { cloudinary } = require("../utils/cloudinary");
 const Image = require("../model/image.model");
-const Product = require("../model/product.model");
-
-const mongoose = require("mongoose");
 
 // create product
 exports.createProduct = async (req, res, next) => {
@@ -90,27 +87,19 @@ exports.getAllProducts = catchAsyncErrors(async (req, res, next) => {
 
 // get product based on :id
 exports.getProductById = catchAsyncErrors(async (req, res, next) => {
-  const { page = 1, limit = 2 } = req.query;
-  const { status, data, message } = await productService.getProductById(
-    req.params.id,
-    page,
-    limit
-  );
+   const {page=1,limit=2} = req.query
+    const {status,data,message} = await productService.getProductById(req.params.id,page,limit)
   try {
-    const { page = 1, limit = 2 } = req.query;
-    const { status, data, message } = await productService.getProductById(
-      req.params.id,
-      page,
-      limit
-    );
+    const {page=1,limit=2} = req.query
+    const {status,data,message} = await productService.getProductById(req.params.id,page,limit)
 
     if (!status || data.length === 0)
-      return res.status(200).send({ success: true, data, message: message });
+      return res.status(200).send({success:true,data,message:message})
     if (!status || data.length === 0)
-      return res.status(200).send({ success: true, data, message: message });
+      return res.status(200).send({success:true,data,message:message})
 
-    res.json({ success: true, data: data, message });
-    res.json({ success: true, data: data, message });
+    res.json({ success: true, data: data,message });
+    res.json({ success: true, data: data,message });
   } catch (error) {
     next(error);
   }
@@ -133,10 +122,7 @@ exports.updateProduct = catchAsyncErrors(async (req, res, next) => {
 // soft delete product
 exports.deleteProduct = catchAsyncErrors(async (req, res, next) => {
   try {
-    const product = await Product.findOne({
-      _id: new mongoose.Types.ObjectId(req.params.id),
-      isActive: true,
-    });
+    const product = await productService.getProductById(req.params.id);
     if (!product) {
       return next(new ErrorHandler("No product found", 404));
     }
@@ -152,10 +138,7 @@ exports.deleteProduct = catchAsyncErrors(async (req, res, next) => {
 // delete product using id
 exports.deleteProductHard = catchAsyncErrors(async (req, res, next) => {
   try {
-    const product = await Product.findOne({
-      _id: new mongoose.Types.ObjectId(req.params.id),
-      isActive: true,
-    });
+    const product = await productService.getProductById(req.params.id);
     if (!product) {
       return next(new ErrorHandler("No product found", 404));
     }
