@@ -121,7 +121,7 @@ exports.updateCartItem = async (userId, productId, quantity) => {
   //   0
   // );
   cart.totalPrice = cart.items.reduce(
-    (acc, i) => acc + i.quantity * i.discountPrice,0
+    (acc, i) => acc + i.quantity * i.price,0
 );
 
   return await cart.save();
@@ -137,7 +137,7 @@ exports.removeFromCart = async (userId, productId) => {
   //   0
   // );
    cart.totalPrice = cart.items.reduce(
-    (acc, i) => acc + i.quantity * i.discountPrice,
+    (acc, i) => acc + i.quantity * i.price,
     0
   );
 
