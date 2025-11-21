@@ -6,13 +6,14 @@ const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 // create new order
 exports.createOrder = async (req, res, next) => {
   try {
-    const { items, shippingAddress } = req.body;
+    const { items, shippingAddress,shipping_charge } = req.body;
     if (items.length === 0)
       return next(new ErrorHandler("items field missing"));
     if (!shippingAddress)
       return next(new ErrorHandler("shippingAddress field missing"));
     const { order, razorpayOrder } = await orderService.createOrder(
       req.user._id,
+      shipping_charge,
       items,
       shippingAddress
     );
