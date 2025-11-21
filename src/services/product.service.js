@@ -183,6 +183,7 @@ exports.getProductById = async (id, page, limit) => {
               format: 1,
               resource_type: 1,
               size: 1,
+              color:1
             },
           },
         ],

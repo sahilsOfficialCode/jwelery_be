@@ -73,6 +73,31 @@ exports.getUserById = catchAsyncErrors(async(req, res, next)=>{
     res.status(200).json({success:true,data:getUserById,message:"User fetched successfully"})
 })
 
+exports.getUserOwnProfile = catchAsyncErrors(async(req, res, next)=>{
+    const getUserById = await userService.getUserById(req.user._id)
+    if(getUserById.is_deleted){
+        return next(new ErrorHandler("User is deleted",404))
+    }
+    if(!getUserById){
+        return next(new ErrorHandler("No user found",404))
+    }
+    const { name, email, mobile } = getUserById
+    const user = { name, email, mobile}
+     res.status(200).json({success:true,data:user,message:"User fetched successfully"})
+})
+
+exports.updateUserOwnProfile = catchAsyncErrors(async(req, res, next)=>{
+    const getUserById = await userService.getUserById(req.user._id)
+    if(getUserById.is_deleted){
+        return next(new ErrorHandler("User is deleted",404))
+    }
+    if(!getUserById){
+        return next(new ErrorHandler("No user found",404))
+    }
+    const updateData = await userService.updateUser(req.user._id,req.body)
+     res.status(200).json({success:true,data:updateData,message:"User updated successfully"})
+})
+
 // implement soft delete
 exports.deleteUser = catchAsyncErrors(async(req, res, next)=>{
     const deleteUser = await userService.getUserById(req.params.id)
