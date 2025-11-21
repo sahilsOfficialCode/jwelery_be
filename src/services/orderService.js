@@ -10,13 +10,14 @@ const razorpayInstance = new Razorpay({
 });
 
 // Create Razorpay order & save our Order
-exports.createOrder = async (userId, items, shippingAddress) => {
+exports.createOrder = async (userId,shipping_charge, items, shippingAddress) => {
   const totalAmount = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
-
+const total = totalAmount + shipping_charge;  // normal calculation
+const finalAmountForRazorpay = total * 100; 
   // create Razorpay order
   const options = {
     // Razorpay expects paise
-    amount: totalAmount * 100,
+    amount: finalAmountForRazorpay,
     currency: "INR",
     receipt: `rcpt_${Date.now()}`,
   };
