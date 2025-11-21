@@ -8,6 +8,7 @@ const imageSchema = new mongoose.Schema(
     resource_type: { type: String, default: "image" }, // image / video / raw
     size: { type: Number },                        // file size in bytes
     folder: { type: String },                      // ecommerce/products, etc.
+    color: { type: String },
     created_at: { type: Date, default: Date.now }, // when uploaded
   },
   { timestamps: true }

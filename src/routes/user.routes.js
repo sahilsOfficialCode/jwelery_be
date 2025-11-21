@@ -4,11 +4,17 @@ const { userAuthentication } = require("../middleware/auth");
 const router = express.Router();
 
 router.use(userAuthentication)
+// user own profile update
+router.get("/profile", userController.getUserOwnProfile);
+router.put("/profile", userController.updateUserOwnProfile);
+
+
 router.post("/", userController.createUser);
 router.get("/", userController.getAllUser);
 router.get("/:id", userController.getUserById);
 router.delete("/:id", userController.deleteUser);
 router.patch("/:id", userController.updateUser);
+
 
 
 
