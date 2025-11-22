@@ -5,6 +5,6 @@ exports.getIndex = catchAsyncErrors(async(req, res, next)=>{
      res.render("index", { 
     title: "Home Page update", 
     message: "Welcome to Ecommerce Project!", 
-    tagline: "Fast · Secure · Reliable update"
+    tagline: `Fast · Secure · Reliable  ${process.env.TEST_VAR}`
   });
 })
