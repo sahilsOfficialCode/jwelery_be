@@ -43,8 +43,7 @@ exports.uploadImages = catchAsyncErrors(async (req, res, next) => {
         format: result.format,
         resource_type: result.resource_type,
         size: result.bytes,
-        folder: "ecommerce/products",
-        color: Array.isArray(colors) ? colors[index] : colors
+        folder: "ecommerce/products"
       }
       const imgResult = await imageService.createImage(imageResult);
       uploadedImages.images.push(imgResult._id);
