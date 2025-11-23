@@ -119,8 +119,16 @@ exports.getAllProducts = async (query) => {
     filters.price = { $lte: Number(query.maxPrice) };
   }
 
-  // Search filter
+  // Date filter
+  if (query.start_date || query.end_date) {
+    filters.createdAt = {};
+    if (query.start_date) filters.createdAt.$gte = new Date(query.start_date);
+    if (query.end_date)
+      filters.createdAt.$lte = new Date(query.end_date + "T23:59:59.999Z");
+  }
+
   if (query.search) {
+    // Search filter
     const regex = new RegExp(query.search, "i");
     filters.$or = [
       { name: regex },
