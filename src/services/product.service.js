@@ -78,7 +78,7 @@ exports.createProduct = async (data) => {
 //   };
 // };
 exports.getAllProducts = async (query) => {
-  const filters = {};
+  const filters = { is_deleted: false };
 
   // Filter by STATUS only
   if (query.status) {
