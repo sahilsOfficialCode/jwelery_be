@@ -13,8 +13,10 @@ exports.googleAuth = passport.authenticate("google", { scope: ["profile", "email
 
 exports.googleCallback = (req, res) => {
    try {
-     const token = jwt.sign({ _id: req.user._id, email: req.user.email, role: req.user.role, provider: req.user.provider }, process.env.JWT_SECRET, { expiresIn: '30d' });
-    res.redirect(`${process.env.FRONTEND_URL}/auth-success?token=${token}`);
+     const token = jwt.sign({ id: req.user._id, email: req.user.email, role: req.user.role, provider: req.user.provider }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    const data = `${process.env.FRONTEND_URL}/login-success?token=${token}&email=${req.user.email}&role=${req.user.role}`
+    console.log("<><>data",data)
+    res.redirect(data);
    } catch (error) {
     res.redirect(`${process.env.FRONTEND_URL}/login?error=google_failed`);
    }
@@ -91,7 +93,7 @@ exports.registerwithemailandPassword = catchAsyncErrors(async (req, res, next) =
     const otp = {
         code: verificationCode
     }
-    await sendEmailFunService(email, verificationCode)
+    await sendEmailFunService(email, verificationCode,name)
     if (emailData) {
         await User.findByIdAndUpdate(emailData._id, otp)
         return res.status(201).send({ success: true, data: { email: email }, message: "A verification code has been sent to your email. Please enter it to continue signing in" })

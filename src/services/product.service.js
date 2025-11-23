@@ -78,11 +78,14 @@ exports.createProduct = async (data) => {
 //   };
 // };
 exports.getAllProducts = async (query) => {
-  const filters = { is_deleted: false, isActive: true };
+  const filters = {};
 
-  // Handle single OR multiple categories
+  // Filter by STATUS only
+  if (query.status) {
+    filters.status = new RegExp(`^${query.status}$`, "i"); // active/inactive
+  }
+  // Category filter
   if (query.category) {
-    // Split by comma and trim
     const categoryNames = query.category.split(",").map((c) => c.trim());
 
     const categoryDocs = await Category.find({
@@ -104,7 +107,7 @@ exports.getAllProducts = async (query) => {
     }
   }
 
-  // Price filters
+  // Price filter
   if (query.minPrice && query.maxPrice) {
     filters.price = {
       $gte: Number(query.minPrice),
@@ -126,12 +129,10 @@ exports.getAllProducts = async (query) => {
     ];
   }
 
-  // Pagination setup
   const page = Math.max(parseInt(query.page) || 1, 1);
   const limit = Math.max(parseInt(query.limit) || 10, 1);
   const skip = (page - 1) * limit;
 
-  // Execute queries in parallel
   const [products, count] = await Promise.all([
     productQuery.findProducts(filters, {
       skip,
@@ -156,8 +157,6 @@ exports.getProductById = async (id, page, limit) => {
   page = parseInt(page);
   limit = parseInt(limit);
   const skip = (page - 1) * limit;
-
-  console.log("<><>skip", typeof skip, skip);
 
   const result = await Product.aggregate([
     { $match: { _id: new mongoose.Types.ObjectId(id), isActive: true } },
@@ -185,6 +184,7 @@ exports.getProductById = async (id, page, limit) => {
               format: 1,
               resource_type: 1,
               size: 1,
+              color: 1,
             },
           },
         ],
@@ -286,6 +286,11 @@ exports.getProductById = async (id, page, limit) => {
     data: result[0],
     message: "product with reviews fetch successfully",
   };
+};
+
+exports.getProductToDeleteById = async (id) => {
+  const result = await Product.findById(id);
+  return result;
 };
 
 exports.updateProduct = async (id, data) => {
