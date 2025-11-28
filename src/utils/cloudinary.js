@@ -23,10 +23,26 @@ const uploadBufferToCloudinary = (buffer, folder) => {
   });
 };
 
+const uploadPdfToCloudinary = (buffer, folder) => {
+  return new Promise((resolve, reject) => {
+    const options = {
+      folder,
+      resource_type: "raw", // PDFs are considered raw files
+      format: "pdf",
+    };
+
+    const stream = cloudinary.uploader.upload_stream(options, (error, result) =>
+      error ? reject(error) : resolve(result)
+    );
+
+    streamifier.createReadStream(buffer).pipe(stream);
+  });
+};
+
 // delete img
 //     await cloudinary.uploader.destroy(publicId);
 
 // delete multiple imgs
 //     await cloudinary.api.delete_resources(publicIds);
 
-module.exports = { cloudinary, uploadBufferToCloudinary };
+module.exports = { cloudinary, uploadBufferToCloudinary , uploadPdfToCloudinary };

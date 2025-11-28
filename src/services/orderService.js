@@ -3,6 +3,8 @@ const Order = require("../model/Order.model");
 const Product = require("../model/product.model");
 const ErrorHandler = require("../utils/errorHandler");
 const Razorpay = require("razorpay");
+const { generateInvoiceBuffer } = require("../utils/invoiceGenerator");
+const { uploadBufferToCloudinary, uploadPdfToCloudinary } = require("../utils/cloudinary");
 
 const razorpayInstance = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -39,7 +41,7 @@ const finalAmountForRazorpay = total * 100;
 };
 
 // Verify payment after Razorpay returns
-exports.verifyPayment = async (
+exports.verifyPayment1 = async (
   razorpayOrderId,
   razorpayPaymentId,
   razorpaySignature
@@ -66,12 +68,63 @@ exports.verifyPayment = async (
       orderStatus: "confirmed",
     },
     { new: true }
-  );
+  ).populate("items.product");
 
   if (!order) throw new ErrorHandler("Order not found", 404);
 
-  return { status: true, order };
+  const pdfBuffer = await generateInvoiceBuffer(order);
+  const cloudFile = await uploadBufferToCloudinary(pdfBuffer, "invoices");
+
+  return { status: true, order,invoiceUrl: cloudFile.secure_url };
 };
+
+exports.verifyPayment = async (
+  razorpayOrderId,
+  razorpayPaymentId,
+  razorpaySignature
+) => {
+  const crypto = require("crypto");
+
+  const expectedSignature = crypto
+    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+    .update(razorpayOrderId + "|" + razorpayPaymentId)
+    .digest("hex");
+
+  if (expectedSignature !== razorpaySignature) {
+    throw new ErrorHandler("Payment verification failed", 400);
+  }
+
+  // STEP 1: Find Order (do not update invoice_url yet)
+  let order = await Order.findOne({
+    "payment.razorpayOrderId": razorpayOrderId
+  }).populate("items.product");
+
+  if (!order) throw new ErrorHandler("Order not found", 404);
+
+  // STEP 2: Update payment status
+  order.payment.razorpayPaymentId = razorpayPaymentId;
+  order.payment.razorpaySignature = razorpaySignature;
+  order.payment.status = "paid";
+  order.orderStatus = "confirmed";
+
+  // STEP 3: Generate PDF buffer
+  const pdfBuffer = await generateInvoiceBuffer(order);
+
+  // STEP 4: Upload to Cloudinary
+  const cloudPdf = await uploadPdfToCloudinary(pdfBuffer, "invoices");
+  const invoiceUrl = cloudPdf.secure_url;
+
+  // STEP 5: Save invoice URL in DB
+  order.invoice_url = invoiceUrl;
+  await order.save();
+
+  return {
+    status: true,
+    order,
+    invoiceUrl,
+  };
+};
+
 
 // get user orders
 exports.getUserOrders = async (userId) => {
