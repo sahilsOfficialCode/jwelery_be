@@ -3,6 +3,8 @@ const path = require("path");
 const hbs = require("handlebars");
 const puppeteer = require("puppeteer");
 const OrderModel = require("../model/Order.model");
+const logoPath = path.join(__dirname, "../public/logo.png");
+const logoUrl = `file://${logoPath.replace(/\\/g, '/')}`;
 
 /**
  * Generate invoice data and optionally PDF
@@ -65,6 +67,7 @@ async function generateInvoice(orderId, generatePdf = false) {
     // gst,
     shipping_charge,
     total,
+     logo: logoUrl
   });
 
   // 5️⃣ Inject invoice content into layout

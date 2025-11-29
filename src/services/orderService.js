@@ -111,7 +111,6 @@ exports.verifyPayment = async (
 
   // STEP 3: Generate PDF buffer
   const pdfBuffer = await generateInvoice(order,true);
-console.log("<><>pdfBuffer",pdfBuffer)
   // STEP 4: Upload to Cloudinary
   const cloudPdf = await uploadPdfToCloudinary(pdfBuffer, "invoices");
   const invoiceUrl = cloudPdf.secure_url;
