@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>{{title}}</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Optional custom config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#6366F1"
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+    {{{body}}}
+</body>
+</html>

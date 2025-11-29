@@ -1,80 +1,94 @@
-const PDFDocument = require("pdfkit");
+const fs = require("fs");
+const path = require("path");
+const hbs = require("handlebars");
+const puppeteer = require("puppeteer");
+const OrderModel = require("../model/Order.model");
 
-exports.generateInvoiceBuffer = async (order) => {
-  return new Promise((resolve, reject) => {
-    try {
-      const doc = new PDFDocument();
-      let buffers = [];
+/**
+ * Generate invoice data and optionally PDF
+ * @param {String} orderId - MongoDB Order ID
+ * @param {Boolean} generatePdf - true: returns PDF buffer, false: returns HTML string
+ * @returns {Buffer|String} PDF buffer or HTML string
+ */
+async function generateInvoice(orderId, generatePdf = false) {
+  // 1️⃣ Fetch order and populate products
+  const order = await OrderModel.findById(orderId).populate("items.product");
+  if (!order) throw new Error("Order not found");
+  // 2️⃣ Prepare items & totals
+  const items = order.items.map(item => ({
+    description: item.product.name,
+    qty: item.quantity,
+    unitPrice: item.price,
+    subtotal: (item.price * item.quantity).toFixed(2),
+  }));
 
-      doc.on("data", buffers.push.bind(buffers));
-      doc.on("end", () => {
-        const pdfBuffer = Buffer.concat(buffers);
-        resolve(pdfBuffer);
-      });
+  const subtotal = items.reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
+  // const gstRate = 18;
+  // const gst = ((subtotal * gstRate) / 100).toFixed(2);
+  const shipping_charge = order.shipping_charge || 0
+  const total = shipping_charge+subtotal;
 
-      // ----------------------------- HEADER -----------------------------
-      doc.fontSize(22).text("INVOICE", { align: "center" }).moveDown(1);
+  const billing = order.billingAddress || order.shippingAddress; // fallback
 
-      doc.fontSize(12)
-        .text("Your Store Name")
-        .text("Address Line 1")
-        .text("City, India")
-        .text("GSTIN: 22AAAAA0000A1Z5")
-        .moveDown(1);
+  // 3️⃣ Load layout + invoice template
+  const layoutPath = path.join(__dirname, "../views/layouts/layout.hbs");
+  const invoicePath = path.join(__dirname, "../views/invoice.hbs");
 
-      doc.text(`Invoice No: INV-${order._id}`);
-      doc.text(`Date: ${new Date().toLocaleDateString()}`);
-      doc.text(`Payment ID: ${order.payment.razorpayPaymentId}`);
-      doc.moveDown(1);
+  const layoutHtml = fs.readFileSync(layoutPath, "utf8");
+  const invoiceHtml = fs.readFileSync(invoicePath, "utf8");
 
-      // ----------------------------- SHIPPING -----------------------------
-      const a = order.shippingAddress;
-      doc.fontSize(14).text("Shipping Address", { underline: true }).moveDown(0.5);
-      doc.fontSize(12)
-        .text(a.name)
-        .text(a.addressLine1)
-        .text(a.addressLine2 || "")
-        .text(`${a.city}, ${a.state} - ${a.postalCode}`)
-        .text(a.country)
-        .text(`Phone: ${a.phone}`)
-        .moveDown(1.5);
+  const invoiceTemplate = hbs.compile(invoiceHtml);
 
-      // ----------------------------- ITEMS TABLE -----------------------------
-      doc.fontSize(14).text("Items", { underline: true }).moveDown(0.5);
+  // 4️⃣ Prepare invoice content
+  const invoiceContent = invoiceTemplate({
+    invoiceDate: new Date().toLocaleDateString(),
+    invoiceNumber: `INV-${order._id}`,
+    companyName: "MYSTIAURA JEWELS",
+    companyAddress: "Calicut beypore Kerala India 673015",
+    companyEmail: "mystiaurahelp@gmail.com",
 
-      doc.fontSize(12);
-      doc.text("Product", 50);
-      doc.text("Qty", 250);
-      doc.text("Price", 300);
-      doc.text("Total", 380);
-      doc.moveDown(1);
+    billingName: billing.name,
+    billingAddress: billing.addressLine1,
+    billingCity: billing.city,
+    billingState: billing.state,
+    billingZip: billing.postalCode,
 
-      let subtotal = 0;
+    shippingName: order.shippingAddress.name,
+    shippingAddress: order.shippingAddress.addressLine1,
+    shippingCity: order.shippingAddress.city,
+    shippingState: order.shippingAddress.state,
+    shippingZip: order.shippingAddress.postalCode,
 
-      order.items.forEach((item) => {
-        const total = item.price * item.quantity;
-        subtotal += total;
-
-        doc.text(item.product.name, 50);
-        doc.text(String(item.quantity), 250);
-        doc.text(`₹${item.price}`, 300);
-        doc.text(`₹${total}`, 380);
-        doc.moveDown(0.7);
-      });
-
-      const gstPercent = 18;
-      const gstAmount = (subtotal * gstPercent) / 100;
-      const grandTotal = subtotal + gstAmount;
-
-      // ----------------------------- TOTALS -----------------------------
-      doc.moveDown(1);
-      doc.fontSize(13).text(`Subtotal: ₹${subtotal}`);
-      doc.text(`GST (${gstPercent}%): ₹${gstAmount.toFixed(2)}`);
-      doc.text(`Grand Total: ₹${grandTotal.toFixed(2)}`, { underline: true });
-
-      doc.end();
-    } catch (err) {
-      reject(err);
-    }
+    items,
+    subtotal: subtotal.toFixed(2),
+    // gstRate,
+    // gst,
+    shipping_charge,
+    total,
   });
-};
+
+  // 5️⃣ Inject invoice content into layout
+  const layoutTemplate = hbs.compile(layoutHtml);
+  const fullHtml = layoutTemplate({
+    title: `Invoice INV-${order._id}`,
+    body: invoiceContent
+  });
+
+  // 6️⃣ Generate PDF if requested
+  if (generatePdf) {
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.setContent(fullHtml, { waitUntil: "networkidle0" });
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      margin: { top: "20px", bottom: "20px", left: "20px", right: "20px" },
+    });
+    await browser.close();
+    return pdfBuffer;
+  }
+
+  return fullHtml; // for browser preview
+}
+
+module.exports = generateInvoice;

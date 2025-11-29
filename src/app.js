@@ -6,6 +6,7 @@ const cors = require("cors");
 const path = require("path");
 const errorMiddleware = require("./middleware/error.js");
 const cookieParser = require("cookie-parser");
+const exphbs = require("express-handlebars");
 
 const app = express();
 
@@ -50,6 +51,11 @@ app.use(express.static(path.join(__dirname, "..", "public")));
 
 // 👉 Point to src/views
 app.set("views", path.join(__dirname, "views"));
+app.engine(".hbs", exphbs.engine({
+    extname: ".hbs",
+    defaultLayout: "layout",
+    layoutsDir: path.join(__dirname, "views/layouts")
+}));
 app.set("view engine", "hbs");
 
 // api logs

@@ -26,8 +26,8 @@ const orderSchema = new mongoose.Schema(
       postalCode: String,
       phone: String,
     },
-
     totalAmount: { type: Number, required: true }, // total order value
+    shipping_charge:{type:Number},
 
     // Razorpay fields
     payment: {

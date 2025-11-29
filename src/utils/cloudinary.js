@@ -23,6 +23,7 @@ const uploadBufferToCloudinary = (buffer, folder) => {
   });
 };
 
+
 const uploadPdfToCloudinary = (buffer, folder) => {
   return new Promise((resolve, reject) => {
     const options = {
