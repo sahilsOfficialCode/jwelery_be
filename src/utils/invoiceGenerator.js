@@ -40,37 +40,83 @@ exports.generateInvoiceBuffer = async (order) => {
         .moveDown(1.5);
 
       // ----------------------------- ITEMS TABLE -----------------------------
-      doc.fontSize(14).text("Items", { underline: true }).moveDown(0.5);
+      // ❗ FIX: Items title aligned with Product column
+      doc.fontSize(14).text("Items", 60, undefined, { underline: true }).moveDown(0.5);
 
       doc.fontSize(12);
-      doc.text("Product", 50);
-      doc.text("Qty", 250);
-      doc.text("Price", 300);
-      doc.text("Total", 380);
-      doc.moveDown(1);
+
+      // Column positions
+      const colProduct = 60;
+      const colQty = 250;
+      const colPrice = 320;
+      const colTotal = 460;
+
+      // -------- HEADER ROW (LOCK Y) --------
+      let headerY = doc.y;
+
+      doc.text("Product", colProduct, headerY);
+      doc.text("Qty", colQty, headerY, { width: 40, align: "right" });
+      doc.text("Price", colPrice, headerY, { width: 70, align: "right" });
+      doc.text("Total", colTotal, headerY, { width: 70, align: "right" });
+
+      doc.moveDown(1.2);
 
       let subtotal = 0;
 
+      // -------- EACH ITEM ROW --------
       order.items.forEach((item) => {
         const total = item.price * item.quantity;
         subtotal += total;
 
-        doc.text(item.product.name, 50);
-        doc.text(String(item.quantity), 250);
-        doc.text(`₹${item.price}`, 300);
-        doc.text(`₹${total}`, 380);
-        doc.moveDown(0.7);
+        let rowY = doc.y;
+        const productWidth = colQty - colProduct - 10; // space before Qty column
+
+        // Text with wrapping
+        doc.text(item.product.name, colProduct, rowY, {
+          width: productWidth,
+          align: "left",
+        });
+
+        // Get height after text wrapping
+        const textHeight = doc.heightOfString(item.product.name, {
+          width: productWidth,
+        });
+
+        // Draw other columns at same Y
+        doc.text(String(item.quantity), colQty, rowY, { width: 40, align: "right" });
+        doc.text(`Rs ${item.price}`, colPrice, rowY, { width: 70, align: "right" });
+        doc.text(`Rs ${total}`, colTotal, rowY, { width: 70, align: "right" });
+
+        // Move down by actual text height
+        doc.y = rowY + textHeight + 5;
+        doc.moveDown(0.3);
       });
 
+      // ----------------------------- TOTALS -----------------------------
       const gstPercent = 18;
       const gstAmount = (subtotal * gstPercent) / 100;
       const grandTotal = subtotal + gstAmount;
 
-      // ----------------------------- TOTALS -----------------------------
       doc.moveDown(1);
-      doc.fontSize(13).text(`Subtotal: ₹${subtotal}`);
-      doc.text(`GST (${gstPercent}%): ₹${gstAmount.toFixed(2)}`);
-      doc.text(`Grand Total: ₹${grandTotal.toFixed(2)}`, { underline: true });
+
+      const totalsX = 350;      
+      const totalsWidth = 200;
+
+      doc.fontSize(13).text(`Subtotal: Rs ${subtotal}`, totalsX, doc.y, {
+        width: totalsWidth,
+        align: "right",
+      });
+
+      doc.text(`GST (${gstPercent}%): Rs ${gstAmount.toFixed(2)}`, totalsX, doc.y, {
+        width: totalsWidth,
+        align: "right",
+      });
+
+      doc.text(`Grand Total: Rs ${grandTotal.toFixed(2)}`, totalsX, doc.y, {
+        width: totalsWidth,
+        align: "right",
+        underline: true,
+      });
 
       doc.end();
     } catch (err) {
