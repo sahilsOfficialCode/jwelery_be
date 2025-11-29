@@ -5,6 +5,7 @@ const ErrorHandler = require("../utils/errorHandler");
 const Razorpay = require("razorpay");
 const { generateInvoiceBuffer } = require("../utils/invoiceGenerator");
 const { uploadBufferToCloudinary, uploadPdfToCloudinary } = require("../utils/cloudinary");
+const generateInvoice = require("../utils/invoiceGenerator");
 
 const razorpayInstance = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -31,6 +32,7 @@ const finalAmountForRazorpay = total * 100;
     items,
     shippingAddress,
     totalAmount,
+    shipping_charge,
     payment: {
       razorpayOrderId: razorpayOrder.id,
       status: "pending",
@@ -108,20 +110,18 @@ exports.verifyPayment = async (
   order.orderStatus = "confirmed";
 
   // STEP 3: Generate PDF buffer
-  const pdfBuffer = await generateInvoiceBuffer(order);
-
+  const pdfBuffer = await generateInvoice(order,true);
   // STEP 4: Upload to Cloudinary
   const cloudPdf = await uploadPdfToCloudinary(pdfBuffer, "invoices");
   const invoiceUrl = cloudPdf.secure_url;
 
-  // STEP 5: Save invoice URL in DB
+  // // STEP 5: Save invoice URL in DB
   order.invoice_url = invoiceUrl;
-  await order.save();
-
+  const data1=await order.save();
+console.log("<><>data1",data1)
   return {
     status: true,
-    order,
-    invoiceUrl,
+    order:data1
   };
 };
 

@@ -1,126 +1,98 @@
-const PDFDocument = require("pdfkit");
+const fs = require("fs");
+const path = require("path");
+const hbs = require("handlebars");
+const puppeteer = require("puppeteer");
+const OrderModel = require("../model/Order.model");
+const logoPath = path.join(__dirname, "../../public/logohorizontal.svg");
+const logoDataUri = `data:image/svg+xml;base64,${fs.readFileSync(logoPath).toString("base64")}`;
 
-exports.generateInvoiceBuffer = async (order) => {
-  return new Promise((resolve, reject) => {
-    try {
-      const doc = new PDFDocument();
-      let buffers = [];
+/**
+ * Generate invoice data and optionally PDF
+ * @param {String} orderId - MongoDB Order ID
+ * @param {Boolean} generatePdf - true: returns PDF buffer, false: returns HTML string
+ * @returns {Buffer|String} PDF buffer or HTML string
+ */
+async function generateInvoice(orderId, generatePdf = false) {
+  // 1️⃣ Fetch order and populate products
+  const order = await OrderModel.findById(orderId).populate("items.product");
+  if (!order) throw new Error("Order not found");
+  // 2️⃣ Prepare items & totals
+  const items = order.items.map(item => ({
+    description: item.product.name,
+    qty: item.quantity,
+    unitPrice: item.price,
+    subtotal: (item.price * item.quantity).toFixed(2),
+  }));
 
-      doc.on("data", buffers.push.bind(buffers));
-      doc.on("end", () => {
-        const pdfBuffer = Buffer.concat(buffers);
-        resolve(pdfBuffer);
-      });
+  const subtotal = items.reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
+  // const gstRate = 18;
+  // const gst = ((subtotal * gstRate) / 100).toFixed(2);
+  const shipping_charge = order.shipping_charge || 0
+  const total = shipping_charge+subtotal;
 
-      // ----------------------------- HEADER -----------------------------
-      doc.fontSize(22).text("INVOICE", { align: "center" }).moveDown(1);
+  const billing = order.billingAddress || order.shippingAddress; // fallback
 
-      doc.fontSize(12)
-        .text("Your Store Name")
-        .text("Address Line 1")
-        .text("City, India")
-        .text("GSTIN: 22AAAAA0000A1Z5")
-        .moveDown(1);
+  // 3️⃣ Load layout + invoice template
+  const layoutPath = path.join(__dirname, "../views/layouts/layout.hbs");
+  const invoicePath = path.join(__dirname, "../views/invoice.hbs");
 
-      doc.text(`Invoice No: INV-${order._id}`);
-      doc.text(`Date: ${new Date().toLocaleDateString()}`);
-      doc.text(`Payment ID: ${order.payment.razorpayPaymentId}`);
-      doc.moveDown(1);
+  const layoutHtml = fs.readFileSync(layoutPath, "utf8");
+  const invoiceHtml = fs.readFileSync(invoicePath, "utf8");
 
-      // ----------------------------- SHIPPING -----------------------------
-      const a = order.shippingAddress;
-      doc.fontSize(14).text("Shipping Address", { underline: true }).moveDown(0.5);
-      doc.fontSize(12)
-        .text(a.name)
-        .text(a.addressLine1)
-        .text(a.addressLine2 || "")
-        .text(`${a.city}, ${a.state} - ${a.postalCode}`)
-        .text(a.country)
-        .text(`Phone: ${a.phone}`)
-        .moveDown(1.5);
+  const invoiceTemplate = hbs.compile(invoiceHtml);
 
-      // ----------------------------- ITEMS TABLE -----------------------------
-      // ❗ FIX: Items title aligned with Product column
-      doc.fontSize(14).text("Items", 60, undefined, { underline: true }).moveDown(0.5);
+  // 4️⃣ Prepare invoice content
+  const invoiceContent = invoiceTemplate({
+    invoiceDate: new Date().toLocaleDateString(),
+    invoiceNumber: `INV-${order._id}`,
+    companyName: "MYSTIAURA JEWELS",
+    companyAddress: "Calicut beypore Kerala India 673015",
+    companyEmail: "mystiaurahelp@gmail.com",
+    companyPhone: "+919895380343",
 
-      doc.fontSize(12);
+    billingName: billing.name,
+    billingAddress: billing.addressLine1,
+    billingCity: billing.city,
+    billingState: billing.state,
+    billingZip: billing.postalCode,
 
-      // Column positions
-      const colProduct = 60;
-      const colQty = 250;
-      const colPrice = 320;
-      const colTotal = 460;
+    shippingName: order.shippingAddress.name,
+    shippingAddress: order.shippingAddress.addressLine1,
+    shippingCity: order.shippingAddress.city,
+    shippingState: order.shippingAddress.state,
+    shippingZip: order.shippingAddress.postalCode,
 
-      // -------- HEADER ROW (LOCK Y) --------
-      let headerY = doc.y;
-
-      doc.text("Product", colProduct, headerY);
-      doc.text("Qty", colQty, headerY, { width: 40, align: "right" });
-      doc.text("Price", colPrice, headerY, { width: 70, align: "right" });
-      doc.text("Total", colTotal, headerY, { width: 70, align: "right" });
-
-      doc.moveDown(1.2);
-
-      let subtotal = 0;
-
-      // -------- EACH ITEM ROW --------
-      order.items.forEach((item) => {
-        const total = item.price * item.quantity;
-        subtotal += total;
-
-        let rowY = doc.y;
-        const productWidth = colQty - colProduct - 10; // space before Qty column
-
-        // Text with wrapping
-        doc.text(item.product.name, colProduct, rowY, {
-          width: productWidth,
-          align: "left",
-        });
-
-        // Get height after text wrapping
-        const textHeight = doc.heightOfString(item.product.name, {
-          width: productWidth,
-        });
-
-        // Draw other columns at same Y
-        doc.text(String(item.quantity), colQty, rowY, { width: 40, align: "right" });
-        doc.text(`Rs ${item.price}`, colPrice, rowY, { width: 70, align: "right" });
-        doc.text(`Rs ${total}`, colTotal, rowY, { width: 70, align: "right" });
-
-        // Move down by actual text height
-        doc.y = rowY + textHeight + 5;
-        doc.moveDown(0.3);
-      });
-
-      // ----------------------------- TOTALS -----------------------------
-      const gstPercent = 18;
-      const gstAmount = (subtotal * gstPercent) / 100;
-      const grandTotal = subtotal + gstAmount;
-
-      doc.moveDown(1);
-
-      const totalsX = 350;      
-      const totalsWidth = 200;
-
-      doc.fontSize(13).text(`Subtotal: Rs ${subtotal}`, totalsX, doc.y, {
-        width: totalsWidth,
-        align: "right",
-      });
-
-      doc.text(`GST (${gstPercent}%): Rs ${gstAmount.toFixed(2)}`, totalsX, doc.y, {
-        width: totalsWidth,
-        align: "right",
-      });
-
-      doc.text(`Grand Total: Rs ${grandTotal.toFixed(2)}`, totalsX, doc.y, {
-        width: totalsWidth,
-        align: "right",
-        underline: true,
-      });
-
-      doc.end();
-    } catch (err) {
-      reject(err);
-    }
+    items,
+    subtotal: subtotal.toFixed(2),
+    // gstRate,
+    // gst,
+    shipping_charge,
+    total,
+     logoUrl: logoDataUri
   });
-};
+
+  // 5️⃣ Inject invoice content into layout
+  const layoutTemplate = hbs.compile(layoutHtml);
+  const fullHtml = layoutTemplate({
+    title: `Invoice INV-${order._id}`,
+    body: invoiceContent
+  });
+
+  // 6️⃣ Generate PDF if requested
+  if (generatePdf) {
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.setContent(fullHtml, { waitUntil: "networkidle0" });
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      margin: { top: "20px", bottom: "20px", left: "20px", right: "20px" },
+    });
+    await browser.close();
+    return pdfBuffer;
+  }
+
+  return fullHtml; // for browser preview
+}
+
+module.exports = generateInvoice;
