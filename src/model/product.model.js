@@ -7,9 +7,9 @@ const productSchema = new mongoose.Schema(
 
     description: { type: String, required: true },
 
-    category: { type: mongoose.Schema.Types.ObjectId,ref:"Category", required: true }, // e.g. Earrings, Necklace, Bangles
+    category: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true }, // e.g. Earrings, Necklace, Bangles
     subCategory: { type: String }, // e.g. "Jhumka Earrings"
-    status:{type:String,default:"active"},
+    status: { type: String, default: "active" },
     material: { type: String }, // Brass, Alloy, German Silver
     plating: { type: String }, // Oxidised Silver, Rose Gold Plated
     finish: { type: String }, // Matte, Glossy, Antique
@@ -18,7 +18,12 @@ const productSchema = new mongoose.Schema(
 
     price: { type: Number, required: true },
     discountPrice: { type: Number }, // after discount
-
+    taxClass: {
+      type: String,
+      enum: ["jewellery", "fashion", "electronics", "others"],
+      required: true
+    },
+     sellerShippingType: { type: String, enum: ["free", "paid"], default: "paid" },
     stock: { type: Number, default: 0 },
 
     images: [
@@ -46,9 +51,9 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    is_deleted:{
-      type:Boolean,
-      default:false
+    is_deleted: {
+      type: Boolean,
+      default: false
     }
   },
   { timestamps: true }

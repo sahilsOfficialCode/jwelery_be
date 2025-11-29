@@ -49,44 +49,96 @@ exports.verifyOtpWithMobile = async (type, userId, otp) => {
     }
 }
 
-exports.sendEmailFunService = async (email, code,name) => {
-    await transporter.sendMail({
-        from: `"Mystiaura Store" <${process.env.EMAIL_USER}>`,
-        to: email,
-        subject: "Welcome to Mystiaura Store Verify Your Email",
-        html: `
-    <div style="font-family: Arial, sans-serif; padding: 20px; background:#f7f7f7;">
-      <div style="max-width: 520px; margin: auto; background: #ffffff; padding: 25px; border-radius: 10px;">
+// const transporter = nodemailer.createTransport({
+//     host: process.env.EMAIL_HOST || 'smtp-relay.brevo.com',
+//     port: 587,
+//     secure: false,
+//     auth: {
+//         user: process.env.EMAIL_USER,
+//         pass: process.env.EMAIL_PASS,
+//     },
+// })
+
+// exports.sendEmailFunService = async (email, code,name) => {
+//     try {
+//         await transporter.sendMail({
+//         from: `"Mystiaura Store" <${process.env.EMAIL_USER}>`,
+//         to: email,
+//         subject: "Welcome to Mystiaura Store Verify Your Email",
+//         html: `
+//     <div style="font-family: Arial, sans-serif; padding: 20px; background:#f7f7f7;">
+//       <div style="max-width: 520px; margin: auto; background: #ffffff; padding: 25px; border-radius: 10px;">
         
-        <h2 style="color:#333;">Hi ${name},</h2>
+//         <h2 style="color:#333;">Hi ${name},</h2>
         
-        <p style="font-size: 15px; color:#555;">
-          Welcome to <strong>Mystiaura Store</strong>! We're excited to have you with us.
-          Please use the OTP below to verify your email and complete your registration.
-        </p>
+//         <p style="font-size: 15px; color:#555;">
+//           Welcome to <strong>Mystiaura Store</strong>! We're excited to have you with us.
+//           Please use the OTP below to verify your email and complete your registration.
+//         </p>
 
-        <div style="margin: 25px 0; text-align: center;">
-          <p style="font-size: 18px; margin-bottom: 10px; color:#333;">Your OTP Code</p>
-          <div style="display: inline-block; padding: 12px 25px; background: #4CAF50; color: white; font-size: 22px; border-radius: 8px; letter-spacing: 2px;">
-            <strong>${code}</strong>
-          </div>
-        </div>
+//         <div style="margin: 25px 0; text-align: center;">
+//           <p style="font-size: 18px; margin-bottom: 10px; color:#333;">Your OTP Code</p>
+//           <div style="display: inline-block; padding: 12px 25px; background: #4CAF50; color: white; font-size: 22px; border-radius: 8px; letter-spacing: 2px;">
+//             <strong>${code}</strong>
+//           </div>
+//         </div>
 
-        <p style="font-size: 15px; color:#555;">
-          After verification, you can explore our quality products, exclusive offers, and a seamless shopping experience.
-        </p>
+//         <p style="font-size: 15px; color:#555;">
+//           After verification, you can explore our quality products, exclusive offers, and a seamless shopping experience.
+//         </p>
 
-        <p style="font-size: 14px; color:#888; margin-top: 25px;">
-          If you didn't sign up for Mystiaura Store, please ignore this email.
-        </p>
+//         <p style="font-size: 14px; color:#888; margin-top: 25px;">
+//           If you didn't sign up for Mystiaura Store, please ignore this email.
+//         </p>
 
-      </div>
-    </div>
-  `,
-    });
+//       </div>
+//     </div>
+//   `,
+//     });
+//     } catch (error) {
+//        console.log("<><>error",error) 
+//     }
 
-}
+// }
 
+
+const transporter = nodemailer.createTransport({
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    secure: false,
+    auth: {
+        user: process.env.EMAIL_USER,        // can be anything
+        pass: process.env.EMAIL_PASS,        // your xsmtpsib-... key
+    },
+});
+
+exports.sendEmailFunService = async (email, code, name) => {
+    try {
+        await transporter.sendMail({
+            // CRITICAL: Use the exact email you verified in Brevo
+            from: `"Mystiaura Store" <${process.env.EMAIL_USER}>`,   
+
+            to: email,
+            subject: "Your Mystiaura Verification Code",
+            
+            // Add plain text version (required 2025)
+            text: `Hi ${name},\n\nYour verification code is ${code}\n\nValid for 30 minutes.\n\nIf you didn't request this, ignore it.`,
+
+            // Your beautiful HTML (keep it)
+            html: `YOUR CURRENT HTML HERE`,
+
+            // Add these headers (stops spam instantly)
+            headers: {
+                'List-Unsubscribe': '<mailto:unsubscribe@mystiaura.com>',
+                'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+            }
+        });
+
+        console.log("OTP email sent (Inbox) →", email);
+    } catch (error) {
+        console.error("Email failed:", error.message);
+    }
+};
 exports.resetPasswordService = async (email) => {
     try {
         const userData = await User.findOne({ email: email })

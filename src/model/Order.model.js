@@ -47,7 +47,7 @@ const orderSchema = new mongoose.Schema(
       enum: ["placed", "confirmed", "shipped", "delivered", "cancelled"],
       default: "placed",
     },
-
+    invoice_url: { type: String },
     notes: String,
   },
   { timestamps: true }
