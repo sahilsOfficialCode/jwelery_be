@@ -3,8 +3,8 @@ const path = require("path");
 const hbs = require("handlebars");
 const puppeteer = require("puppeteer");
 const OrderModel = require("../model/Order.model");
-const logoPath = path.join(__dirname, "../public/logo.png");
-const logoUrl = `file://${logoPath.replace(/\\/g, '/')}`;
+const logoPath = path.join(__dirname, "../../public/logohorizontal.svg");
+const logoDataUri = `data:image/svg+xml;base64,${fs.readFileSync(logoPath).toString("base64")}`;
 
 /**
  * Generate invoice data and optionally PDF
@@ -48,6 +48,7 @@ async function generateInvoice(orderId, generatePdf = false) {
     companyName: "MYSTIAURA JEWELS",
     companyAddress: "Calicut beypore Kerala India 673015",
     companyEmail: "mystiaurahelp@gmail.com",
+    companyPhone: "+919895380343",
 
     billingName: billing.name,
     billingAddress: billing.addressLine1,
@@ -67,7 +68,7 @@ async function generateInvoice(orderId, generatePdf = false) {
     // gst,
     shipping_charge,
     total,
-     logo: logoUrl
+     logoUrl: logoDataUri
   });
 
   // 5️⃣ Inject invoice content into layout
