@@ -1,7 +1,12 @@
 const express = require('express');
 const indexController = require('../controller/index.controller');
 const generateInvoice = require('../utils/invoiceGenerator');
+const fs = require('fs');
+const path = require('path');
 const router = express.Router()
+
+const logoPath = path.join(__dirname, '../../public/logohorizontal.svg');
+const logoDataUri = `data:image/svg+xml;base64,${fs.readFileSync(logoPath).toString('base64')}`;
 
 router.get("/",indexController.getIndex);
 // router.get("/invoice-preview", (req, res) => {
@@ -15,6 +20,7 @@ router.get("/invoice-preview", (req, res) => {
     companyName: "Saillic Jewels",
     companyAddress: "123, Some Street, City, PIN",
     companyEmail: "support@saillic.com",
+    logoUrl: logoDataUri,
     billingName: "Sujith Pillai",
     billingAddress: "Travancore Road, Alappuzha",
     billingCity: "Alappuzha",
@@ -40,7 +46,7 @@ router.get("/invoice-pdf/:orderId", async (req, res) => {
     const pdfBuffer = await generateInvoice(req.params.orderId, true);
     res.set({
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename=invoice_${req.params.orderId}.pdf`,
+      "Content-Disposition": `attachment; filename=Mystiaura_invoice.pdf`,
     });
     res.send(pdfBuffer);
   } catch (err) {
