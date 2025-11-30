@@ -2,7 +2,7 @@
 <div class="max-w-4xl mx-auto my-8 bg-white p-8 shadow-md">
   {{!-- logo --}}
   <div class="flex items-center gap-4">
-    <img src="{{logoUrl}}" alt="Logo" class="w-16 h-16 object-contain">
+    {{!-- <img src="{{logoUrl}}" alt="Logo" class="h-20 w-auto object-contain"> --}}
   </div>
   <!-- Header -->
   <div class="flex justify-between items-center border-b pb-4 mb-4">
@@ -12,7 +12,7 @@
       <p class="text-gray-500 text-sm">Invoice #: {{invoiceNumber}}</p>
     </div>
     <div class="text-right">
-      <h2 class="text-lg font-semibold text-gray-700">{{companyName}}</h2>
+      <img src="{{logoUrl}}" alt="Company Logo" class="h-13 w-auto inline-block">
       <p class="text-gray-500 text-sm">{{companyAddress}}</p>
       <p class="text-gray-500 text-sm">{{companyEmail}}</p>
       <p class="text-gray-500 text-sm">{{companyPhone}}</p>
