@@ -20,8 +20,7 @@ const productSchema = new mongoose.Schema(
     discountPrice: { type: Number }, // after discount
     taxClass: {
       type: String,
-      enum: ["jewellery", "fashion", "electronics", "others"],
-      required: true
+      enum: ["jewellery", "fashion", "electronics", "others"]
     },
      sellerShippingType: { type: String, enum: ["free", "paid"], default: "paid" },
     stock: { type: Number, default: 0 },
