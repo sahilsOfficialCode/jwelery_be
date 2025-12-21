@@ -113,12 +113,6 @@ const transporter = nodemailer.createTransport({
 });
 
 exports.sendEmailFunService = async (email, code, name) => {
-    console.log("<><>working");
-    console.log("<><>process.env.EMAIL_HOST", process.env.EMAIL_HOST);
-    console.log("<><>process.env.EMAIL_USER", process.env.EMAIL_USER);
-    console.log("<><>process.env.EMAIL_PASS", process.env.EMAIL_PASS);
-
-
     try {
         const data = await transporter.sendMail({
             from: `"Mystiaura Store" <${process.env.EMAIL_USER}>`,
