@@ -68,9 +68,9 @@ exports.verifyOtpWithMobile = async (type, userId, otp) => {
 //         html: `
 //     <div style="font-family: Arial, sans-serif; padding: 20px; background:#f7f7f7;">
 //       <div style="max-width: 520px; margin: auto; background: #ffffff; padding: 25px; border-radius: 10px;">
-        
+
 //         <h2 style="color:#333;">Hi ${name},</h2>
-        
+
 //         <p style="font-size: 15px; color:#555;">
 //           Welcome to <strong>Mystiaura Store</strong>! We're excited to have you with us.
 //           Please use the OTP below to verify your email and complete your registration.
@@ -103,7 +103,7 @@ exports.verifyOtpWithMobile = async (type, userId, otp) => {
 
 
 const transporter = nodemailer.createTransport({
-    host: 'smtp-relay.brevo.com',
+    host: process.env.EMAIL_HOST || 'smtp-relay.brevo.com',
     port: 587,
     secure: false,
     auth: {
@@ -114,31 +114,50 @@ const transporter = nodemailer.createTransport({
 
 exports.sendEmailFunService = async (email, code, name) => {
     try {
-        await transporter.sendMail({
-            // CRITICAL: Use the exact email you verified in Brevo
-            from: `"Mystiaura Store" <${process.env.EMAIL_USER}>`,   
-
+        const data = await transporter.sendMail({
+            from: `"Mystiaura Store" <${process.env.EMAIL_USER}>`,
             to: email,
             subject: "Your Mystiaura Verification Code",
-            
-            // Add plain text version (required 2025)
-            text: `Hi ${name},\n\nYour verification code is ${code}\n\nValid for 30 minutes.\n\nIf you didn't request this, ignore it.`,
 
-            // Your beautiful HTML (keep it)
-            html: `YOUR CURRENT HTML HERE`,
+            text: `Hi ${name}, your verification code is ${code}. Valid for 30 minutes.`,
 
-            // Add these headers (stops spam instantly)
+            html: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto;">
+            <h2 style="color:#660033;">Mystiaura Verification Code</h2>
+            <p>Hi ${name},</p>
+            <p>Your verification code is:</p>
+            <div style="
+                font-size: 24px;
+                font-weight: bold;
+                letter-spacing: 3px;
+                margin: 16px 0;
+            ">
+                ${code}
+            </div>
+            <p>This code is valid for <b>30 minutes</b>.</p>
+            <p>If you didn’t request this, you can safely ignore this email.</p>
+            <hr />
+            <p style="font-size:12px;color:#777;">
+                © ${new Date().getFullYear()} Mystiaura. All rights reserved.
+            </p>
+        </div>
+    `,
+
             headers: {
                 'List-Unsubscribe': '<mailto:unsubscribe@mystiaura.com>',
                 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
             }
         });
 
+console.log("<><>data",data);
+
         console.log("OTP email sent (Inbox) →", email);
     } catch (error) {
         console.error("Email failed:", error.message);
     }
 };
+
+
 exports.resetPasswordService = async (email) => {
     try {
         const userData = await User.findOne({ email: email })
