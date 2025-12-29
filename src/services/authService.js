@@ -234,7 +234,7 @@ exports.sendEmailFunService = async (email, code, name) => {
                 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
             }
         });
-        return response
+        return {success:true,data:response} 
     } catch (error) {
         console.error("Email failed:", error.message);
     }
@@ -268,7 +268,6 @@ exports.addNewPasswordService = async (body) => {
 
         const userData = await User.findById(id)
         const { role, isVerified, is_deleted, is_blocked, is_register, otp: userOTP } = userData
-
 
         if (otp != userOTP) {
             return { status: false, message: "token is entered incorrect so please try correct token" }
