@@ -10,12 +10,12 @@ exports.sendResetEmailFunUtils = async (email, token, type) => {
   });
 
   if (type === "resetPassword") {
-    const resetLink = `https://ecommerce-fe-pink.vercel.app/login/${token}`;
+    const resetLink = `https://www.mystiaura.net/login/${token}`;
 
     const data = await transporter.sendMail({
-      from: `"MyApp" <${process.env.EMAIL_USER}>`,
+      from: `"Mystiaura" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: "Reset Your MyApp Password",
+      subject: "Reset Your Mystiaura Password",
       html: `
       <!DOCTYPE html>
       <html>
@@ -34,7 +34,7 @@ exports.sendResetEmailFunUtils = async (email, token, type) => {
               overflow: hidden;
             }
             .header {
-              background: #2874f0;
+              background: #660033;
               color: #ffffff;
               padding: 20px;
               text-align: center;
@@ -50,7 +50,7 @@ exports.sendResetEmailFunUtils = async (email, token, type) => {
               display: inline-block;
               margin: 20px 0;
               padding: 12px 24px;
-              background: #2874f0;
+              background: #660033;
               color: #ffffff !important;
               text-decoration: none;
               border-radius: 6px;
@@ -67,7 +67,7 @@ exports.sendResetEmailFunUtils = async (email, token, type) => {
         </head>
         <body>
           <div class="container">
-            <div class="header">MyApp Password Reset</div>
+            <div class="header">Mystiaura Password Reset</div>
             <div class="content">
               <p>Hello,</p>
               <p>We received a request to reset your password. Click the button below to set a new password:</p>
@@ -75,13 +75,14 @@ exports.sendResetEmailFunUtils = async (email, token, type) => {
               <p>This link will expire in 10 minutes. If you did not request a password reset, you can ignore this email.</p>
             </div>
             <div class="footer">
-              © ${new Date().getFullYear()} MyApp • All rights reserved
+              © ${new Date().getFullYear()} Mystiaura • All rights reserved
             </div>
           </div>
         </body>
       </html>
       `
     });
+console.log("<><>data",data);
 
     return {
       status: true,
