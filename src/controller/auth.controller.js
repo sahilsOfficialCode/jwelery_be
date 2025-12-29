@@ -93,8 +93,8 @@ exports.registerwithemailandPassword = catchAsyncErrors(async (req, res, next) =
     const otp = {
         code: verificationCode
     }
-    await sendEmailFunService(email, verificationCode,name)
-    if (emailData) {
+    const response = await sendEmailFunService(email, verificationCode,name)
+    if (response) {
         await User.findByIdAndUpdate(emailData._id, otp)
         return res.status(201).send({ success: true, data: { email: email }, message: "A verification code has been sent to your email. Please enter it to continue signing in" })
     }

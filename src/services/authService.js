@@ -68,9 +68,9 @@ exports.verifyOtpWithMobile = async (type, userId, otp) => {
 //         html: `
 //     <div style="font-family: Arial, sans-serif; padding: 20px; background:#f7f7f7;">
 //       <div style="max-width: 520px; margin: auto; background: #ffffff; padding: 25px; border-radius: 10px;">
-        
+
 //         <h2 style="color:#333;">Hi ${name},</h2>
-        
+
 //         <p style="font-size: 15px; color:#555;">
 //           Welcome to <strong>Mystiaura Store</strong>! We're excited to have you with us.
 //           Please use the OTP below to verify your email and complete your registration.
@@ -103,29 +103,125 @@ exports.verifyOtpWithMobile = async (type, userId, otp) => {
 
 
 const transporter = nodemailer.createTransport({
-    host: 'smtp-relay.brevo.com',
-    port: 587,
-    secure: false,
+    service: "gmail",
     auth: {
-        user: process.env.EMAIL_USER,        // can be anything
-        pass: process.env.EMAIL_PASS,        // your xsmtpsib-... key
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
     },
 });
 
 exports.sendEmailFunService = async (email, code, name) => {
     try {
-        await transporter.sendMail({
+        const response = await transporter.sendMail({
             // CRITICAL: Use the exact email you verified in Brevo
-            from: `"Mystiaura Store" <${process.env.EMAIL_USER}>`,   
+            from: `"Mystiaura Store" <${process.env.EMAIL_USER}>`,
 
             to: email,
             subject: "Your Mystiaura Verification Code",
-            
+
             // Add plain text version (required 2025)
             text: `Hi ${name},\n\nYour verification code is ${code}\n\nValid for 30 minutes.\n\nIf you didn't request this, ignore it.`,
 
             // Your beautiful HTML (keep it)
-            html: `YOUR CURRENT HTML HERE`,
+            html: `
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Email Verification</title>
+    <style>
+      body {
+        background: #f7f7f7;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      .container {
+        max-width: 600px;
+        margin: 30px auto;
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        overflow: hidden;
+      }
+      .header {
+        background: #660033;
+        color: #ffffff;
+        padding: 22px;
+        text-align: center;
+        font-size: 22px;
+        font-weight: bold;
+        letter-spacing: 0.5px;
+      }
+      .content {
+        padding: 30px 20px;
+        color: #333333;
+        text-align: center;
+      }
+      .content p {
+        font-size: 15px;
+        line-height: 1.6;
+        margin: 12px 0;
+      }
+      .otp-box {
+        margin: 25px auto;
+        display: inline-block;
+        padding: 14px 26px;
+        font-size: 28px;
+        letter-spacing: 6px;
+        font-weight: bold;
+        color: #660033;
+        background: #f9f1f4;
+        border-radius: 6px;
+        border: 1px dashed #660033;
+      }
+      .note {
+        font-size: 13px;
+        color: #666;
+        margin-top: 20px;
+      }
+      .footer {
+        background: #fafafa;
+        text-align: center;
+        padding: 15px;
+        font-size: 12px;
+        color: #777;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">Verify Your Email</div>
+
+      <div class="content">
+        <p>Hello <strong>${name}</strong>,</p>
+
+        <p>
+          Thank you for registering with <strong>Mystiaura</strong>.
+          Please use the verification code below to complete your registration.
+        </p>
+
+        <div class="otp-box">${code}</div>
+
+        <p class="note">
+          This code is valid for <strong>30 minutes</strong>.
+          Please do not share this code with anyone.
+        </p>
+
+        <p class="note">
+          If you didn’t create an account with Mystiaura, you can safely ignore this email.
+        </p>
+      </div>
+
+      <div class="footer">
+        © ${new Date().getFullYear()} Mystiaura • All rights reserved
+      </div>
+    </div>
+  </body>
+</html>
+`
+            ,
 
             // Add these headers (stops spam instantly)
             headers: {
@@ -133,8 +229,7 @@ exports.sendEmailFunService = async (email, code, name) => {
                 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
             }
         });
-
-        console.log("OTP email sent (Inbox) →", email);
+        return response
     } catch (error) {
         console.error("Email failed:", error.message);
     }
@@ -163,10 +258,10 @@ exports.addNewPasswordService = async (body) => {
         if (!password) return { status: false, message: "password fields are required...!" }
         const decodeData = jwt.verify(code, process.env.JWT_SECRET);
         const { id, otp } = decodeData
-        
+
         const userData = await User.findById(id)
         const { role, isVerified, is_deleted, is_blocked, is_register, otp: userOTP } = userData
-        
+
 
         if (otp != userOTP) {
             return { status: false, message: "token is entered incorrect so please try correct token" }
