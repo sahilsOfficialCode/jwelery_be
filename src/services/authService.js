@@ -69,7 +69,9 @@ exports.verifyOtpWithMobile = async (type, userId, otp) => {
 //     <div style="font-family: Arial, sans-serif; padding: 20px; background:#f7f7f7;">
 //       <div style="max-width: 520px; margin: auto; background: #ffffff; padding: 25px; border-radius: 10px;">
 
+
 //         <h2 style="color:#333;">Hi ${name},</h2>
+
 
 //         <p style="font-size: 15px; color:#555;">
 //           Welcome to <strong>Mystiaura Store</strong>! We're excited to have you with us.
@@ -103,6 +105,9 @@ exports.verifyOtpWithMobile = async (type, userId, otp) => {
 
 
 const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST || 'smtp-relay.brevo.com',
+    port: 587,
+    secure: false,
     service: "gmail",
     auth: {
         user: process.env.EMAIL_USER,
@@ -234,6 +239,8 @@ exports.sendEmailFunService = async (email, code, name) => {
         console.error("Email failed:", error.message);
     }
 };
+
+
 exports.resetPasswordService = async (email) => {
     try {
         const userData = await User.findOne({ email: email })
