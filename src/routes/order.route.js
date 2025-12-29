@@ -3,6 +3,9 @@ const router = express.Router();
 const orderController = require("../controller/order.controller");
 const { userAuthentication, authorizeRoles } = require("../middleware/auth");
 
+router.post("/guest/create", orderController.createGuestOrder);
+router.post("/guest/verify-payment", orderController.verifyGuestPayment);
+
 router.use(userAuthentication);
 router.post("/create", orderController.createOrder);
 router.post("/verify-payment", orderController.verifyPayment);
