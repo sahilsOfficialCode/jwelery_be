@@ -163,8 +163,10 @@ exports.addNewPasswordService = async (body) => {
         if (!password) return { status: false, message: "password fields are required...!" }
         const decodeData = jwt.verify(code, process.env.JWT_SECRET);
         const { id, otp } = decodeData
+        
         const userData = await User.findById(id)
         const { role, isVerified, is_deleted, is_blocked, is_register, otp: userOTP } = userData
+        
 
         if (otp != userOTP) {
             return { status: false, message: "token is entered incorrect so please try correct token" }
