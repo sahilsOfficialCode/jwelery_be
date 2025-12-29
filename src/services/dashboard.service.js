@@ -42,7 +42,7 @@ exports.getDashboardStats = async (startDate, endDate) => {
 
 //  Latest products
 exports.getLatestProducts = async (limit = 5) => {
-  return Product.find().sort({ createdAt: -1 }).limit(limit);
+  return Product.find().sort({ createdAt: -1 }).limit(limit).populate({path:"images",select: "secure_url public_id"})
 };
 
 // Latest orders

@@ -82,7 +82,6 @@ exports.sendResetEmailFunUtils = async (email, token, type) => {
       </html>
       `
     });
-console.log("<><>data",data);
 
     return {
       status: true,
