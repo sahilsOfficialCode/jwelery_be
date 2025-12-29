@@ -12,14 +12,14 @@ const bcrypt = require('bcrypt')
 exports.googleAuth = passport.authenticate("google", { scope: ["profile", "email"] });
 
 exports.googleCallback = (req, res) => {
-   try {
-     const token = jwt.sign({ id: req.user._id, email: req.user.email, role: req.user.role, provider: req.user.provider }, process.env.JWT_SECRET, { expiresIn: '30d' });
-    const data = `${process.env.FRONTEND_URL}/login-success?token=${token}&email=${req.user.email}&role=${req.user.role}`
-    console.log("<><>data",data)
-    res.redirect(data);
-   } catch (error) {
-    res.redirect(`${process.env.FRONTEND_URL}/login?error=google_failed`);
-   }
+    try {
+        const token = jwt.sign({ id: req.user._id, email: req.user.email, role: req.user.role, provider: req.user.provider }, process.env.JWT_SECRET, { expiresIn: '30d' });
+        const data = `${process.env.FRONTEND_URL}/login-success?token=${token}&email=${req.user.email}&role=${req.user.role}`
+        console.log("<><>data", data)
+        res.redirect(data);
+    } catch (error) {
+        res.redirect(`${process.env.FRONTEND_URL}/login?error=google_failed`);
+    }
 };
 
 exports.userLoginWithCode = catchAsyncErrors(async (req, res, next) => {
@@ -84,22 +84,24 @@ const generateOTP = () => {
 exports.registerwithemailandPassword = catchAsyncErrors(async (req, res, next) => {
     const { email, name } = req.body
     if (!email) return next(new ErrorHandler("please enter email fields"))
-        if (!name) return next(new ErrorHandler("please enter name fields"))
+    if (!name) return next(new ErrorHandler("please enter name fields"))
     const emailExist = await User.findOne({ email, is_register: true });
     if (emailExist) return next(new ErrorHandler("email already exist", 400));
 
     const emailData = await User.findOne({ email, is_register: false });
     const verificationCode = generateOTP()
     const otp = {
-        code: verificationCode
+        code: verificationCode.toString(),
+        expiresAt:new Date(Date.now() + 30 * 60 * 1000)
     }
-    const response = await sendEmailFunService(email, verificationCode,name)
+     const response = await sendEmailFunService(email, verificationCode,name)
     if (emailData) {
-        await User.findByIdAndUpdate(emailData._id, otp)
-        return res.status(201).send({ success: true, data: { email: email }, message: "A verification code has been sent to your email. Please enter it to continue signing in" })
+        const d = await User.findByIdAndUpdate(emailData._id, {otp:{code: verificationCode,expiresAt: new Date(Date.now() + 30 * 60 * 1000)}}, { new: true })
+        return res.status(201).send({ success: true, data: { email: email }, message: "A verification code has been sent to your email. Please enter it to continue signing in update" ,otp})
+    } else {
+        await User.create({ name, email: email.toLowerCase(), otp })
+        return res.status(201).send({ success: true, data: { email: email }, message: "A verification code has been sent to your email. Please enter it to continue signing in create" ,otp})
     }
-    await User.create({ name, email: email.toLowerCase(), otp })
-    return res.status(201).send({ success: true, data: { email: email }, message: "A verification code has been sent to your email. Please enter it to continue signing in" })
 })
 
 exports.registerWithEmailandPasswordVerify = catchAsyncErrors(async (req, res, next) => {
@@ -137,12 +139,12 @@ exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
     return res.status(200).send({ status, message });
 })
 
-exports.updatePassword = catchAsyncErrors(async (req,res, next)=>{
-     const { status, data, message } = await authService.addNewPasswordService(req.body)
+exports.updatePassword = catchAsyncErrors(async (req, res, next) => {
+    const { status, data, message } = await authService.addNewPasswordService(req.body)
     if (!status) return next(new ErrorHandler(message, 404));
     return res.status(200).send({ status, message });
 })
 
-exports.loginWithEmail = catchAsyncErrors(async(req,res,next)=>{
+exports.loginWithEmail = catchAsyncErrors(async (req, res, next) => {
 
 })
