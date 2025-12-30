@@ -19,7 +19,7 @@ exports.createGuestOrder = async (shipping_charge, items, shippingAddress) => {
 
   const normalizedItems = [];
   for (const item of items) {
-    const productId = item?.product || item?.productId;
+    const productId = item?._id || item?.productId;
     const quantity = Number(item?.quantity);
 
     if (!productId) throw new ErrorHandler("product field missing", 400);
@@ -177,7 +177,8 @@ exports.verifyPayment = async (
   // // STEP 5: Save invoice URL in DB
   order.invoice_url = invoiceUrl;
   const data1=await order.save();
-console.log("<><>data1",data1)
+  console.log("<><>data1",data1)
+// console.log("<><>data1",data1)
   return {
     status: true,
     order:data1

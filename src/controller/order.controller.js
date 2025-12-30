@@ -43,7 +43,7 @@ const validateItems = (items, { requirePrice = false } = {}) => {
   }
 
   for (const item of items) {
-    const productId = item?.product || item?.productId;
+    const productId = item?._id || item?.productId;
     const quantity = Number(item?.quantity);
     if (!productId) return "product field missing";
     if (!Number.isFinite(quantity) || quantity <= 0) return "Invalid quantity";
@@ -61,9 +61,12 @@ const validateItems = (items, { requirePrice = false } = {}) => {
 
 exports.createGuestOrder = async (req, res, next) => {
   try {
+    console.log("<><>working create order without login")
     const { items, shippingAddress, shipping_charge } = req.body;
 
     const itemsError = validateItems(items);
+    console.log("<><>itemsError",itemsError);
+    
     if (itemsError) return next(new ErrorHandler(itemsError, 400));
 
     const addressError = validateShippingAddress(shippingAddress);
