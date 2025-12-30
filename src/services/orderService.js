@@ -12,6 +12,65 @@ const razorpayInstance = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+exports.createGuestOrder = async (shipping_charge, items, shippingAddress) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new ErrorHandler("items field missing", 400);
+  }
+
+  const normalizedItems = [];
+  for (const item of items) {
+    const productId = item?._id || item?.productId;
+    const quantity = Number(item?.quantity);
+
+    if (!productId) throw new ErrorHandler("product field missing", 400);
+    if (!Number.isFinite(quantity) || quantity <= 0)
+      throw new ErrorHandler("Invalid quantity", 400);
+
+    const product = await Product.findById(productId).lean();
+    if (!product) throw new ErrorHandler("Product not found", 404);
+
+    const unitPrice = product.discountPrice || product.price;
+    normalizedItems.push({
+      product: productId,
+      quantity,
+      price: unitPrice,
+    });
+  }
+
+  const shippingCharge = Number(shipping_charge || 0);
+  if (!Number.isFinite(shippingCharge) || shippingCharge < 0)
+    throw new ErrorHandler("Invalid shipping_charge", 400);
+
+  const totalAmount = normalizedItems.reduce(
+    (acc, i) => acc + i.price * i.quantity,
+    0
+  );
+
+  const total = totalAmount + shippingCharge;
+  const finalAmountForRazorpay = Math.round(total * 100);
+
+  const options = {
+    amount: finalAmountForRazorpay,
+    currency: "INR",
+    receipt: `rcpt_${Date.now()}`,
+  };
+
+  const razorpayOrder = await razorpayInstance.orders.create(options);
+
+  const order = await Order.create({
+    items: normalizedItems,
+    shippingAddress,
+    totalAmount,
+    shipping_charge: shippingCharge,
+    payment: {
+      razorpayOrderId: razorpayOrder.id,
+      status: "pending",
+    },
+  });
+
+  return { order, razorpayOrder };
+};
+
 // Create Razorpay order & save our Order
 exports.createOrder = async (userId,shipping_charge, items, shippingAddress) => {
   const totalAmount = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
@@ -118,7 +177,8 @@ exports.verifyPayment = async (
   // // STEP 5: Save invoice URL in DB
   order.invoice_url = invoiceUrl;
   const data1=await order.save();
-console.log("<><>data1",data1)
+  console.log("<><>data1",data1)
+// console.log("<><>data1",data1)
   return {
     status: true,
     order:data1

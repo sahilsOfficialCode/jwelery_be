@@ -1,5 +1,6 @@
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const userService = require("../services/user.service");
+const ErrorHandler = require("../utils/errorHandler");
 
 exports.createUser = catchAsyncErrors(async(req, res, next)=>{
     const {email, password, name } = req.body 
