@@ -8,7 +8,6 @@ exports.addAddress = catchAsyncErrors( async(req,res,next)=>{
         return res.status(200).send({success:true,data,message})
 })
 
-
 exports.getAllAddresses = catchAsyncErrors( async(req,res,next)=>{
         const {status, data, message} = await getAllAddressesService(req.user._id);
         if(!status) return next(new ErrorHandler(message,400))
@@ -16,6 +15,7 @@ exports.getAllAddresses = catchAsyncErrors( async(req,res,next)=>{
             message: "Addresses fetched successfully"
         });
 })
+
 exports.deleteAddress = catchAsyncErrors(async(req,res,next)=>{
     const { id } = req.params;
         const {status,data,message} = await deleteAddressService(id);

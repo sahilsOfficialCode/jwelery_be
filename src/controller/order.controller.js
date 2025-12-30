@@ -3,6 +3,116 @@ const cartService = require("../services/cart.service");
 const ErrorHandler = require("../utils/errorHandler");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 
+const validateShippingAddress = (shippingAddress) => {
+  if (!shippingAddress || typeof shippingAddress !== "object") {
+    return "shippingAddress field missing";
+  }
+
+  const requiredFields = [
+    "name",
+    "phone",
+    "addressLine1",
+    "city",
+    "postalCode",
+    "country",
+  ];
+
+  for (const key of requiredFields) {
+    const value = shippingAddress?.[key];
+    if (typeof value !== "string" || value.trim().length === 0) {
+      return `shippingAddress.${key} field missing`;
+    }
+  }
+
+  const phone = shippingAddress.phone.trim();
+  if (!/^[0-9]{10,15}$/.test(phone)) {
+    return "Invalid shippingAddress.phone";
+  }
+
+  const postalCode = shippingAddress.postalCode.trim();
+  if (!/^[0-9A-Za-z -]{3,12}$/.test(postalCode)) {
+    return "Invalid shippingAddress.postalCode";
+  }
+
+  return null;
+};
+
+const validateItems = (items, { requirePrice = false } = {}) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    return "items field missing";
+  }
+
+  for (const item of items) {
+    const productId = item?._id || item?.productId;
+    const quantity = Number(item?.quantity);
+    if (!productId) return "product field missing";
+    if (!Number.isFinite(quantity) || quantity <= 0) return "Invalid quantity";
+
+    if (requirePrice && item?.price === undefined) return "price field missing";
+
+    if (item?.price !== undefined) {
+      const price = Number(item?.price);
+      if (!Number.isFinite(price) || price < 0) return "Invalid price";
+    }
+  }
+
+  return null;
+};
+
+exports.createGuestOrder = async (req, res, next) => {
+  try {
+    console.log("<><>working create order without login")
+    const { items, shippingAddress, shipping_charge } = req.body;
+
+    const itemsError = validateItems(items);
+    console.log("<><>itemsError",itemsError);
+    
+    if (itemsError) return next(new ErrorHandler(itemsError, 400));
+
+    const addressError = validateShippingAddress(shippingAddress);
+    if (addressError) return next(new ErrorHandler(addressError, 400));
+
+    const shippingCharge = Number(shipping_charge || 0);
+    if (!Number.isFinite(shippingCharge) || shippingCharge < 0)
+      return next(new ErrorHandler("Invalid shipping_charge", 400));
+
+    const { order, razorpayOrder } = await orderService.createGuestOrder(
+      shippingCharge,
+      items,
+      shippingAddress
+    );
+
+    res.status(201).json({ status: true, order, razorpayOrder });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// verify payment
+exports.verifyGuestPayment = async (req, res, next) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+      req.body;
+
+    if (!razorpay_order_id)
+      return next(new ErrorHandler("razorpay_order_id field missing", 400));
+    if (!razorpay_payment_id)
+      return next(new ErrorHandler("razorpay_payment_id field missing", 400));
+    if (!razorpay_signature)
+      return next(new ErrorHandler("razorpay_signature field missing", 400));
+
+    const { status, order } = await orderService.verifyPayment(
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature
+    );
+
+    res.json({ status: true, order });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // create new order
 exports.createOrder = async (req, res, next) => {
   try {
