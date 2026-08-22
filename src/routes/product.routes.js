@@ -1,7 +1,7 @@
 const express = require("express");
 const productController = require("../controller/product.controller");
 const upload = require("../middleware/upload");
-const { userAuthentication } = require("../middleware/auth");
+const { userAuthentication, authorizeRoles } = require("../middleware/auth");
 const router = express.Router();
 
 // users get All products
@@ -9,7 +9,7 @@ router.get("/all", productController.getAllProducts);
 router.get("/trending-products", productController.userGetAllTrendingProducts);
 router.get("/:id", productController.getProductById);
 
-router.use(userAuthentication);
+router.use(userAuthentication, authorizeRoles("admin"));
 // Admin section
 router.post("/", productController.createProduct);
 // get all products

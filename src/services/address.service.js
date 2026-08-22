@@ -60,9 +60,9 @@ exports.getAllAddressesService = async (userId) => {
     }
 };
 
-exports.deleteAddressService = async (addressId) => {
+exports.deleteAddressService = async (addressId, userId) => {
     try {
-        const deletedAddress = await Address.findByIdAndDelete(addressId);
+        const deletedAddress = await Address.findOneAndDelete({ _id: addressId, user: userId });
         if (!deletedAddress) {
             return { status: false, message: "Address not found" }
         }
@@ -72,10 +72,10 @@ exports.deleteAddressService = async (addressId) => {
     }
 };
 
-exports.updateAddressService = async (addressId, updateData) => {
+exports.updateAddressService = async (addressId, userId, updateData) => {
     try {
         const updatedAddress = await Address.findByIdAndUpdate(
-            addressId,
+            { _id: addressId, user: userId },
             { $set: updateData },
             { new: true, runValidators: true }
         );

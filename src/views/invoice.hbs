@@ -32,6 +32,8 @@
       <p class="text-gray-600">{{shippingName}}</p>
       <p class="text-gray-600">{{shippingAddress}}</p>
       <p class="text-gray-600">{{shippingCity}}, {{shippingState}} - {{shippingZip}}</p>
+      {{#if customerEmail}}<p class="text-gray-600">Email: {{customerEmail}}</p>{{/if}}
+      {{#if customerPhone}}<p class="text-gray-600">Phone: {{customerPhone}}</p>{{/if}}
     </div>
   </div>
   <!-- Table of items -->

@@ -102,6 +102,7 @@ exports.verifyGuestPayment = async (req, res, next) => {
       return next(new ErrorHandler("razorpay_signature field missing", 400));
 
     const { status, order } = await orderService.verifyPayment(
+      null,
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature
@@ -117,7 +118,7 @@ exports.verifyGuestPayment = async (req, res, next) => {
 exports.createOrder = async (req, res, next) => {
   try {
     const { items, shippingAddress,shipping_charge } = req.body;
-    if (items.length === 0)
+    if (!Array.isArray(items) || items.length === 0)
       return next(new ErrorHandler("items field missing"));
     if (!shippingAddress)
       return next(new ErrorHandler("shippingAddress field missing"));
@@ -146,6 +147,7 @@ exports.verifyPayment = async (req, res, next) => {
       return next(new ErrorHandler("razorpay_signature field missing"));
 
     const { status, order } = await orderService.verifyPayment(
+      req.user._id,
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature
@@ -232,7 +234,9 @@ exports.getSingleOrderWithId = catchAsyncErrors(async (req, res, next) => {
   const { orderId } = req.params;
 
   const orderData = await orderService.getSingleOrderWithIdService(
-    orderId
+    orderId,
+    req.user._id,
+    req.user.role === "admin"
   );
 
   if(!orderData.status) return next(new ErrorHandler(orderData.message,400))

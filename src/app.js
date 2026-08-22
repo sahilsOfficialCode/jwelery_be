@@ -9,9 +9,6 @@ const cookieParser = require("cookie-parser");
 const exphbs = require("express-handlebars");
 
 const app = express();
-
-// Session setup
-console.log("SESSION_SECRET:", process.env.SESSION_SECRET);
 app.use(express.json());
 app.use(cookieParser());
 app.use(
@@ -19,7 +16,7 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false, sameSite: "lax" },
+    cookie: { secure: process.env.NODE_ENV === "production", sameSite: "lax", httpOnly: true },
   })
 );
 
@@ -48,7 +45,23 @@ app.use(passport.session());
 //   })
 // );
 
-app.use(cors());
+const allowedOrigins = new Set([
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "https://www.mystiaura.net",
+  "https://mystiaura.net",
+  ...(process.env.FRONTEND_URL || "").split(",").map((origin) => origin.trim()).filter(Boolean),
+]);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.has(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+}));
 
 // 👉 Serve static files from root/public
 app.use(express.static(path.join(__dirname, "..", "public")));

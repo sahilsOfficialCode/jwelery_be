@@ -1,6 +1,6 @@
 const express = require("express");
 const userController= require("../controller/user.controller");
-const { userAuthentication } = require("../middleware/auth");
+const { userAuthentication, authorizeRoles } = require("../middleware/auth");
 const router = express.Router();
 
 router.use(userAuthentication)
@@ -9,11 +9,11 @@ router.get("/profile", userController.getUserOwnProfile);
 router.put("/profile", userController.updateUserOwnProfile);
 
 
-router.post("/", userController.createUser);
-router.get("/", userController.getAllUser);
-router.get("/:id", userController.getUserById);
-router.delete("/:id", userController.deleteUser);
-router.patch("/:id", userController.updateUser);
+router.post("/", authorizeRoles("admin"), userController.createUser);
+router.get("/", authorizeRoles("admin"), userController.getAllUser);
+router.get("/:id", authorizeRoles("admin"), userController.getUserById);
+router.delete("/:id", authorizeRoles("admin"), userController.deleteUser);
+router.patch("/:id", authorizeRoles("admin"), userController.updateUser);
 
 
 

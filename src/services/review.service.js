@@ -8,7 +8,7 @@ class ReviewService {
     // Create a new review
     async createReview({ userId, productId, rating, title, comment, images, tags }) {
         // Optional: check duplicate review per user/product
-        const userOrderExisting = await OrderModel.findOne({user:userId,"items.product":productId})
+        const userOrderExisting = await OrderModel.findOne({user:userId,"items.product":productId, orderStatus:"delivered"})
         if(!userOrderExisting) return {status:false,message:"This user has not placed any orders, so they cannot submit a review"}
         const userExisting = await User.findById(userId);
         if (userExisting.is_blocked) return { status: false, message: "This user has been blocked. Please contact the administrator for assistance." }
@@ -21,7 +21,7 @@ class ReviewService {
             message: "You are not registered."
         };
         const productExisting = await productModel.findById(productId)
-        if (!productExisting && productExisting.isActive && !productExisting.is_deleted) return { status: false, message: "Product not found. Please check the product ID or make sure it exists" }
+        if (!productExisting || !productExisting.isActive || productExisting.is_deleted) return { status: false, message: "Product not found. Please check the product ID or make sure it exists" }
         const existing = await Review.findOne({ user: userId, product: productId });
         if (existing) return { status: false, message: "User has already reviewed this product." }
 

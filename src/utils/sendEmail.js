@@ -1,5 +1,32 @@
 const nodemailer = require("nodemailer");
 
+const orderMailTransporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+exports.sendOrderConfirmationEmail = async (order, invoiceUrl) => {
+  const recipient = order.user?.email;
+  if (!recipient) return { success: false, message: "Customer email is unavailable" };
+
+  try {
+    await orderMailTransporter.sendMail({
+      from: `"Mystiaura" <${process.env.EMAIL_USER}>`,
+      to: recipient,
+      subject: `Mystiaura order confirmation #${order._id}`,
+      text: `Thank you for your order. Your invoice is available here: ${invoiceUrl}`,
+      html: `<p>Thank you for your order.</p><p>Your invoice: <a href="${invoiceUrl}">View invoice</a></p>`,
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Order confirmation email failed:", error.message);
+    return { success: false, message: error.message };
+  }
+};
+
 exports.sendResetEmailFunUtils = async (email, token, type) => {
   const transporter = nodemailer.createTransport({
     service: "gmail",

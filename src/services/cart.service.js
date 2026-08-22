@@ -40,6 +40,10 @@ const ErrorHandler = require("../utils/errorHandler");
 // };
 
 exports.addToCart = async (userId, productId, quantity) => {
+  quantity = Number(quantity);
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    throw new ErrorHandler("Quantity must be a positive whole number", 400);
+  }
   const product = await Product.findById(productId);
   if (!product)
     return { status: false, data: null, message: "Product not found" };
@@ -109,6 +113,10 @@ exports.countCartDocuments = async (userId) => {
 };
 
 exports.updateCartItem = async (userId, productId, quantity) => {
+  quantity = Number(quantity);
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    throw new ErrorHandler("Quantity must be a positive whole number", 400);
+  }
   const cart = await Cart.findOne({ user: userId });
   if (!cart) throw new ErrorHandler("Cart not found", 404);
 
@@ -146,6 +154,13 @@ exports.removeFromCart = async (userId, productId) => {
 
 exports.deleteAllCart = async (userId) => {
   const cart = await Cart.findOne({ user: userId });
+  if (!cart) {
+    return {
+      status: false,
+      data: null,
+      message: "There are no products in your cart",
+    };
+  }
   if (cart.items.length === 0)
     return {
       status: false,

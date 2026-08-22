@@ -14,7 +14,9 @@ const logoDataUri = `data:image/svg+xml;base64,${fs.readFileSync(logoPath).toStr
  */
 async function generateInvoice(orderId, generatePdf = false) {
   // 1️⃣ Fetch order and populate products
-  const order = await OrderModel.findById(orderId).populate("items.product");
+  const order = await OrderModel.findById(orderId)
+    .populate("items.product")
+    .populate("user", "email mobile");
   if (!order) throw new Error("Order not found");
   // 2️⃣ Prepare items & totals
   const items = order.items.map(item => ({
@@ -49,6 +51,8 @@ async function generateInvoice(orderId, generatePdf = false) {
     companyAddress: "Calicut beypore Kerala India 673015",
     companyEmail: "mystiaurahelp@gmail.com",
     companyPhone: "+919895380343",
+    customerEmail: order.user?.email || "",
+    customerPhone: order.user?.mobile || billing?.phone || "",
 
     billingName: billing.name,
     billingAddress: billing.addressLine1,

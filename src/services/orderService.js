@@ -3,9 +3,9 @@ const Order = require("../model/Order.model");
 const Product = require("../model/product.model");
 const ErrorHandler = require("../utils/errorHandler");
 const Razorpay = require("razorpay");
-const { generateInvoiceBuffer } = require("../utils/invoiceGenerator");
 const { uploadBufferToCloudinary, uploadPdfToCloudinary } = require("../utils/cloudinary");
 const generateInvoice = require("../utils/invoiceGenerator");
+const { sendOrderConfirmationEmail } = require("../utils/sendEmail");
 
 const razorpayInstance = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -28,6 +28,9 @@ exports.createGuestOrder = async (shipping_charge, items, shippingAddress) => {
 
     const product = await Product.findById(productId).lean();
     if (!product) throw new ErrorHandler("Product not found", 404);
+    if (!product.isActive || product.is_deleted || product.stock < quantity) {
+      throw new ErrorHandler(`${product.name} is out of stock`, 400);
+    }
 
     const unitPrice = product.discountPrice || product.price;
     normalizedItems.push({
@@ -72,10 +75,42 @@ exports.createGuestOrder = async (shipping_charge, items, shippingAddress) => {
 };
 
 // Create Razorpay order & save our Order
-exports.createOrder = async (userId,shipping_charge, items, shippingAddress) => {
-  const totalAmount = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
-const total = totalAmount + shipping_charge;  // normal calculation
-const finalAmountForRazorpay = total * 100; 
+exports.createOrder = async (userId, shipping_charge, items, shippingAddress) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new ErrorHandler("items field missing", 400);
+  }
+
+  const normalizedItems = [];
+  for (const item of items) {
+    const productId = item?.product?._id || item?.product || item?._id || item?.productId;
+    const quantity = Number(item?.quantity);
+    if (!productId || !Number.isInteger(quantity) || quantity <= 0) {
+      throw new ErrorHandler("Invalid order item", 400);
+    }
+
+    const product = await Product.findById(productId).lean();
+    if (!product || !product.isActive || product.is_deleted) {
+      throw new ErrorHandler("Product not available", 400);
+    }
+    if (product.stock < quantity) {
+      throw new ErrorHandler(`${product.name} is out of stock`, 400);
+    }
+
+    normalizedItems.push({
+      product: product._id,
+      quantity,
+      price: product.discountPrice || product.price,
+    });
+  }
+
+  const shippingCharge = Number(shipping_charge || 0);
+  if (!Number.isFinite(shippingCharge) || shippingCharge < 0) {
+    throw new ErrorHandler("Invalid shipping_charge", 400);
+  }
+
+  const totalAmount = normalizedItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const total = totalAmount + shippingCharge;
+  const finalAmountForRazorpay = Math.round(total * 100);
   // create Razorpay order
   const options = {
     // Razorpay expects paise
@@ -88,10 +123,10 @@ const finalAmountForRazorpay = total * 100;
 
   const order = await Order.create({
     user: userId,
-    items,
+    items: normalizedItems,
     shippingAddress,
     totalAmount,
-    shipping_charge,
+    shipping_charge: shippingCharge,
     payment: {
       razorpayOrderId: razorpayOrder.id,
       status: "pending",
@@ -133,13 +168,14 @@ exports.verifyPayment1 = async (
 
   if (!order) throw new ErrorHandler("Order not found", 404);
 
-  const pdfBuffer = await generateInvoiceBuffer(order);
+  const pdfBuffer = await generateInvoice(order._id, true);
   const cloudFile = await uploadBufferToCloudinary(pdfBuffer, "invoices");
 
   return { status: true, order,invoiceUrl: cloudFile.secure_url };
 };
 
 exports.verifyPayment = async (
+  userId,
   razorpayOrderId,
   razorpayPaymentId,
   razorpaySignature
@@ -156,20 +192,39 @@ exports.verifyPayment = async (
   }
 
   // STEP 1: Find Order (do not update invoice_url yet)
-  let order = await Order.findOne({
-    "payment.razorpayOrderId": razorpayOrderId
-  }).populate("items.product");
+  const orderQuery = { "payment.razorpayOrderId": razorpayOrderId };
+  if (userId) orderQuery.user = userId;
+  let order = await Order.findOne(orderQuery)
+    .populate("items.product")
+    .populate("user", "email mobile");
 
   if (!order) throw new ErrorHandler("Order not found", 404);
+  if (order.payment.status === "paid") {
+    return { status: true, order };
+  }
+  if (order.orderStatus === "cancelled") {
+    throw new ErrorHandler("Cancelled orders cannot be paid", 400);
+  }
 
   // STEP 2: Update payment status
+  for (const item of order.items) {
+    const updatedProduct = await Product.findOneAndUpdate(
+      { _id: item.product._id, stock: { $gte: item.quantity } },
+      { $inc: { stock: -item.quantity } },
+      { new: true }
+    );
+    if (!updatedProduct) {
+      throw new ErrorHandler("One or more products are no longer available", 409);
+    }
+  }
+
   order.payment.razorpayPaymentId = razorpayPaymentId;
   order.payment.razorpaySignature = razorpaySignature;
   order.payment.status = "paid";
   order.orderStatus = "confirmed";
 
   // STEP 3: Generate PDF buffer
-  const pdfBuffer = await generateInvoice(order,true);
+  const pdfBuffer = await generateInvoice(order._id, true);
   // STEP 4: Upload to Cloudinary
   const cloudPdf = await uploadPdfToCloudinary(pdfBuffer, "invoices");
   const invoiceUrl = cloudPdf.secure_url;
@@ -177,6 +232,7 @@ exports.verifyPayment = async (
   // // STEP 5: Save invoice URL in DB
   order.invoice_url = invoiceUrl;
   const data1=await order.save();
+  await sendOrderConfirmationEmail(data1, invoiceUrl);
   console.log("<><>data1",data1)
 // console.log("<><>data1",data1)
   return {
@@ -406,9 +462,10 @@ exports.adminUpdateOrderService = async (orderId, updateData) => {
   }
 };
 
-exports.getSingleOrderWithIdService = async (id) => {
+exports.getSingleOrderWithIdService = async (id, userId, isAdmin = false) => {
   try {
-    const orderData = await Order.findById(id).populate({
+    const query = isAdmin ? { _id: id } : { _id: id, user: userId };
+    const orderData = await Order.findOne(query).populate({
       path: "items.product",
       populate: {
         path: "category", model: "Category"

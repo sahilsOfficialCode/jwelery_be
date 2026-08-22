@@ -16,14 +16,14 @@ router.post(
   authorizeRoles("admin"),
   orderController.adminCreateOrder
 );
-router.put(
-  "/:orderId",
-  authorizeRoles("admin"),
-  orderController.changeOrderStatus
-);
 router.put("/cancel/:orderId", orderController.cancelOrder);
 router.put(
   "/status/:orderId",
+  authorizeRoles("admin"),
+  orderController.changeOrderStatus
+);
+router.put(
+  "/:orderId",
   authorizeRoles("admin"),
   orderController.changeOrderStatus
 );

@@ -97,10 +97,10 @@ exports.registerwithemailandPassword = catchAsyncErrors(async (req, res, next) =
      const response = await sendEmailFunService(email, verificationCode,name)
     if (emailData) {
         const d = await User.findByIdAndUpdate(emailData._id, {otp:{code: verificationCode,expiresAt: new Date(Date.now() + 30 * 60 * 1000)}}, { new: true })
-        return res.status(201).send({ success: true, data: { email: email }, message: "A verification code has been sent to your email. Please enter it to continue signing in update" ,otp})
+        return res.status(201).send({ success: true, data: { email: email }, message: "A verification code has been sent to your email. Please enter it to continue signing in update" })
     } else {
         await User.create({ name, email: email.toLowerCase(), otp })
-        return res.status(201).send({ success: true, data: { email: email }, message: "A verification code has been sent to your email. Please enter it to continue signing in create" ,otp})
+        return res.status(201).send({ success: true, data: { email: email }, message: "A verification code has been sent to your email. Please enter it to continue signing in create" })
     }
 })
 
@@ -109,6 +109,7 @@ exports.registerWithEmailandPasswordVerify = catchAsyncErrors(async (req, res, n
     if (!email || !otp || !password) return res.status(400).send({ success: false, message: "Please fill in all required fields" })
     const emailData = await User.findOne({ email: email.toLowerCase(), is_register: false });
     if (!emailData) return res.status(400).send({ success: false, message: "please check the email something went wrong please contact admin" })
+    if (!emailData.otp?.expiresAt || emailData.otp.expiresAt < new Date()) return res.status(400).send({ success: false, message: "The verification code has expired" })
     if (emailData.otp.code != otp) return res.status(400).send({ success: false, message: "The OTP you entered does not match" })
     const hashPassword = await bcrypt.hash(password, 10)
     const updateData = await User.findByIdAndUpdate(emailData._id, { is_register: true, otp: undefined, password: hashPassword })
@@ -128,7 +129,7 @@ exports.loginWithEmailAndPassword = catchAsyncErrors(async (req, res, next) => {
     const passwordMatch = await bcrypt.compare(password, emailData.password)
 
     if (!passwordMatch) return next(new ErrorHandler("Invalid email or password. Please try again", 403))
-    const token = jwt.sign({ id: emailData._id, email: email.email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES })
+    const token = jwt.sign({ id: emailData._id, email: emailData.email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES })
     sendToken(token, emailData, 200, res);
 
 })

@@ -18,7 +18,7 @@ exports.getAllAddresses = catchAsyncErrors( async(req,res,next)=>{
 
 exports.deleteAddress = catchAsyncErrors(async(req,res,next)=>{
     const { id } = req.params;
-        const {status,data,message} = await deleteAddressService(id);
+        const {status,data,message} = await deleteAddressService(id, req.user._id);
          if(!status) return next(new ErrorHandler(message,400))
         return res.status(200).json({ success:true,data,
             message: "Address deleted successfully",
@@ -29,7 +29,7 @@ exports.deleteAddress = catchAsyncErrors(async(req,res,next)=>{
 exports.updateAddress = catchAsyncErrors( async(req,res,next)=>{
      const { id } = req.params;
         const updateData = req.body;
-        const {status,data,message} = await updateAddressService(id, updateData);
+        const {status,data,message} = await updateAddressService(id, req.user._id, updateData);
          if(!status) return next(new ErrorHandler(message,400))
         return res.status(200).json({ success:true,
             message: "Address updated successfully",

@@ -208,7 +208,7 @@ exports.getProductById = async (id, page, limit) => {
           {
             $match: {
               $expr: { $eq: ["$product", "$$productId"] },
-              status: { $ne: "rejected" },
+              status: "approved",
             },
           },
           { $sort: { createdAt: -1 } },
@@ -246,7 +246,7 @@ exports.getProductById = async (id, page, limit) => {
           {
             $match: {
               $expr: { $eq: ["$product", "$$productId"] },
-              status: { $ne: "rejected" },
+              status: "approved",
             },
           },
           { $project: { rating: 1 } },
